@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+build/
+.env
+.env.local
+logs/
+uploads/
+*.log
+.DS_Store
+.vscode/
+cookies.txt

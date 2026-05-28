@@ -1,0 +1,303 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  HOTEL_ADMIN
+  RECEPTIONIST
+  STAFF
+  CUSTOMER
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  RESERVED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentMethod {
+  STRIPE
+  RAZORPAY
+  PAYPAL
+  CASH
+  CARD
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ShiftType {
+  MORNING
+  AFTERNOON
+  NIGHT
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  fullName      String
+  phoneNumber   String?
+  avatar        String?
+  role          UserRole  @default(CUSTOMER)
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  otp           String?
+  otpExpiry     DateTime?
+  refreshToken  String?
+  resetToken    String?
+  resetTokenExpiry DateTime?
+  
+  hotelId       String?
+  hotel         Hotel?    @relation(fields: [hotelId], references: [id])
+  
+  bookings      Booking[]
+  reviews       Review[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@map("users")
+}
+
+model Hotel {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  state       String?
+  country     String?
+  zipCode     String?
+  rating      Float?   @default(0)
+  logo        String?
+  images      String[]
+  amenities   String[]
+  checkInTime String   @default("14:00")
+  checkOutTime String  @default("11:00")
+  taxRate     Float    @default(0.0)
+  currency    String   @default("USD")
+  timezone    String   @default("UTC")
+  
+  isActive    Boolean  @default(true)
+  
+  users       User[]
+  rooms       Room[]
+  staff       Staff[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@map("hotels")
+}
+
+model Room {
+  id            String        @id @default(uuid())
+  roomNumber    String
+  roomType      String
+  floor         Int?
+  description   String?
+  pricePerNight Float
+  capacity      Int           @default(2)
+  size          Float?
+  beds          Int           @default(1)
+  amenities     String[]
+  images        String[]
+  status        RoomStatus    @default(AVAILABLE)
+  isActive      Boolean       @default(true)
+  
+  hotelId       String
+  hotel         Hotel         @relation(fields: [hotelId], references: [id])
+  
+  bookings      Booking[]
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  @@unique([hotelId, roomNumber])
+  @@map("rooms")
+}
+
+model Booking {
+  id                String        @id @default(uuid())
+  bookingReference  String        @unique
+  checkIn           DateTime
+  checkOut          DateTime
+  guests            Int           @default(1)
+  status            BookingStatus @default(PENDING)
+  specialRequests   String?
+  totalAmount       Float
+  paidAmount        Float         @default(0)
+  discountAmount    Float         @default(0)
+  taxAmount         Float         @default(0)
+  currency          String        @default("USD")
+  source            String?       @default("ONLINE")
+  
+  roomId            String
+  room              Room          @relation(fields: [roomId], references: [id])
+  
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  
+  payments          Payment[]
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
+
+  @@map("bookings")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  amount          Float
+  currency        String        @default("USD")
+  status          PaymentStatus @default(PENDING)
+  method          PaymentMethod
+  transactionId   String?       @unique
+  invoiceNumber   String?       @unique
+  receiptUrl      String?
+  refundAmount    Float         @default(0)
+  refundReason    String?
+  paymentIntentId String?
+  metadata        Json?
+  
+  bookingId       String
+  booking         Booking       @relation(fields: [bookingId], references: [id])
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@map("payments")
+}
+
+model Staff {
+  id            String     @id @default(uuid())
+  employeeId    String     @unique
+  fullName      String
+  email         String     @unique
+  phoneNumber   String?
+  position      String
+  department    String
+  salary        Float?
+  gender        Gender?
+  address       String?
+  avatar        String?
+  shift         ShiftType?
+  joiningDate   DateTime   @default(now())
+  isActive      Boolean    @default(true)
+  
+  hotelId       String
+  hotel         Hotel      @relation(fields: [hotelId], references: [id])
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deletedAt     DateTime?
+
+  @@map("staff")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  hotelId   String?
+  roomId    String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  link      String?
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  ipAddress String?
+  userAgent String?
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique
+  amount        Float
+  taxAmount     Float    @default(0)
+  totalAmount   Float
+  status        String   @default("PENDING")
+  dueDate       DateTime
+  paidAt        DateTime?
+  notes         String?
+  pdfUrl        String?
+  
+  bookingId     String
+  paymentId     String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("invoices")
+}
