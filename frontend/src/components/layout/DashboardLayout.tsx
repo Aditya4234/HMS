@@ -22,7 +22,6 @@ import {
   Building2,
   ChevronDown,
   MessageSquare,
-  Sparkles,
   FileText,
   Loader2,
 } from 'lucide-react';
@@ -39,7 +38,6 @@ const allSidebarLinks = [
   { name: 'Payments', href: '/dashboard/payments', icon: CreditCard, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
   { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
   { name: 'Invoices', href: '/dashboard/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
-  { name: 'AI Assistant', href: '/dashboard/ai', icon: Sparkles, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
   { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
 ];
