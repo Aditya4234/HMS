@@ -2,14 +2,25 @@ import OpenAI from 'openai';
 import prisma from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY || '',
-  defaultHeaders: {
-    'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:3000',
-    'X-Title': 'Hotel Management System',
-  },
-});
+let openai: OpenAI | null = null;
+
+const getOpenAI = (): OpenAI => {
+  if (!openai) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      throw new AppError('OpenRouter API key not configured', 500);
+    }
+    openai = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey,
+      defaultHeaders: {
+        'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:3000',
+        'X-Title': 'Hotel Management System',
+      },
+    });
+  }
+  return openai;
+};
 
 interface SearchParams {
   checkIn?: string;
@@ -55,7 +66,7 @@ Response: {"checkIn":"2026-05-28","checkOut":"2026-05-29","guests":2,"rooms":1,"
 
 Today's date is ${new Date().toISOString().split('T')[0]}. Use it to calculate relative dates.`;
 
-  const completion = await openai.chat.completions.create({
+  const completion = await getOpenAI().chat.completions.create({
     model: 'openai/gpt-3.5-turbo',
     messages: [
       { role: 'system', content: systemPrompt },
