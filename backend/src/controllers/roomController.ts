@@ -8,8 +8,8 @@ import { parsePagination } from '../utils/helpers';
 
 export const createRoom = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const hotelId = req.user?.hotelId;
-    if (!hotelId) throw new AppError('Hotel not found', 404);
+    const hotelId = req.user?.hotelId || req.body.hotelId;
+    if (!hotelId) return ApiResponse.success(res, null, 'No hotel associated with your account');
 
     const { roomNumber, roomType, floor, description, pricePerNight, capacity, size, beds, amenities, status } = req.body;
 
@@ -56,12 +56,19 @@ export const createRoom = async (req: AuthRequest, res: Response, next: NextFunc
 export const getRooms = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const hotelId = req.user?.hotelId;
-    if (!hotelId) throw new AppError('Hotel not found', 404);
+    const queryHotelId = req.query.hotelId as string | undefined;
 
     const { page, limit, skip } = parsePagination(req.query);
     const { status, roomType, minPrice, maxPrice } = req.query;
 
-    const where: any = { hotelId, deletedAt: null };
+    const where: any = { deletedAt: null };
+    if (req.user?.role === 'SUPER_ADMIN') {
+      if (queryHotelId) where.hotelId = queryHotelId;
+    } else if (hotelId) {
+      where.hotelId = hotelId;
+    } else {
+      return ApiResponse.paginated(res, [], 0, page, limit);
+    }
     if (status) where.status = status as string;
     if (roomType) where.roomType = roomType as string;
     if (minPrice || maxPrice) {
@@ -136,6 +143,8 @@ export const updateRoom = async (req: AuthRequest, res: Response, next: NextFunc
     if (updateData.pricePerNight) updateData.pricePerNight = parseFloat(updateData.pricePerNight);
     if (updateData.capacity) updateData.capacity = parseInt(updateData.capacity);
     if (updateData.beds) updateData.beds = parseInt(updateData.beds);
+    if (updateData.floor !== undefined) updateData.floor = updateData.floor ? parseInt(updateData.floor) : null;
+    if (updateData.size !== undefined) updateData.size = updateData.size ? parseFloat(updateData.size) : null;
 
     const updatedRoom = await prisma.room.update({
       where: { id },
@@ -178,6 +187,65 @@ export const updateRoomStatus = async (req: AuthRequest, res: Response, next: Ne
     });
 
     return ApiResponse.success(res, room, 'Room status updated');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const searchRooms = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { query, checkIn, checkOut, minPrice, maxPrice, roomType, page: pageStr, limit: limitStr } = req.query;
+
+    const { page, limit, skip } = parsePagination({ page: pageStr, limit: limitStr });
+
+    const where: any = {
+      status: 'AVAILABLE',
+      deletedAt: null,
+    };
+
+    if (query) {
+      const search = query as string;
+      where.OR = [
+        { roomNumber: { contains: search, mode: 'insensitive' } },
+        { roomType: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { amenities: { has: search } },
+      ];
+    }
+
+    if (roomType) where.roomType = roomType as string;
+    if (minPrice || maxPrice) {
+      where.pricePerNight = {};
+      if (minPrice) where.pricePerNight.gte = parseFloat(minPrice as string);
+      if (maxPrice) where.pricePerNight.lte = parseFloat(maxPrice as string);
+    }
+
+    if (checkIn && checkOut) {
+      const bookedRoomIds = await prisma.booking.findMany({
+        where: {
+          status: { in: ['CONFIRMED', 'CHECKED_IN'] },
+          AND: [
+            { checkIn: { lt: new Date(checkOut as string) } },
+            { checkOut: { gt: new Date(checkIn as string) } },
+          ],
+        },
+        select: { roomId: true },
+      });
+      where.id = { notIn: bookedRoomIds.map((b) => b.roomId) };
+    }
+
+    const [rooms, total] = await Promise.all([
+      prisma.room.findMany({
+        where,
+        skip,
+        take: limit,
+        include: { hotel: { select: { name: true, city: true, country: true } } },
+        orderBy: { pricePerNight: 'asc' },
+      }),
+      prisma.room.count({ where }),
+    ]);
+
+    return ApiResponse.paginated(res, rooms, total, page, limit);
   } catch (error) {
     next(error);
   }

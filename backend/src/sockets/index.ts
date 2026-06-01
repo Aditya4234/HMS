@@ -1,16 +1,37 @@
 import { Server, Socket } from 'socket.io';
+import { verifyAccessToken } from '../utils/jwt';
 
 let io: Server;
 
 export const initializeSocket = (socketIO: Server): void => {
   io = socketIO;
 
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+    try {
+      const decoded = verifyAccessToken(token);
+      (socket as any).user = decoded;
+      next();
+    } catch {
+      next(new Error('Invalid token'));
+    }
+  });
+
   io.on('connection', (socket: Socket) => {
-    console.log('Client connected:', socket.id);
+    const user = (socket as any).user;
+
+    if (user?.userId) {
+      socket.join(`user-${user.userId}`);
+    }
+    if (user?.hotelId) {
+      socket.join(`hotel-${user.hotelId}`);
+    }
 
     socket.on('join-hotel', (hotelId: string) => {
       socket.join(`hotel-${hotelId}`);
-      console.log(`Socket ${socket.id} joined hotel-${hotelId}`);
     });
 
     socket.on('leave-hotel', (hotelId: string) => {
@@ -30,7 +51,8 @@ export const initializeSocket = (socketIO: Server): void => {
     });
 
     socket.on('disconnect', () => {
-      console.log('Client disconnected:', socket.id);
+      socket.leave(`user-${user?.userId}`);
+      if (user?.hotelId) socket.leave(`hotel-${user.hotelId}`);
     });
   });
 };

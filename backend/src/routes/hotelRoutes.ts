@@ -10,8 +10,8 @@ import {
 const router = Router();
 
 router.get('/', getHotels);
-router.get('/:id', getHotelById);
 router.get('/settings/info', authenticate, getHotelSettings);
+router.get('/:id', getHotelById);
 router.put('/', authenticate, updateHotel);
 
 export default router;

@@ -9,6 +9,7 @@ import { customerAPI } from '@/lib/api';
 import { getInitials, formatDate } from '@/lib/utils';
 import { Users, Search, Mail, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -23,7 +24,7 @@ export default function CustomersPage() {
     try {
       const res = await customerAPI.getAll();
       setCustomers(res.data.data);
-    } catch {} finally { setLoading(false); }
+    } catch { toast.error('Failed to load customers'); } finally { setLoading(false); }
   };
 
   const filtered = customers.filter((c) =>

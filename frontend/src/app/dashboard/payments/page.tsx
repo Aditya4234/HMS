@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { paymentAPI } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { CreditCard, DollarSign, TrendingUp } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<any[]>([]);
@@ -23,7 +23,7 @@ export default function PaymentsPage() {
         ]);
         setPayments(payRes.data.data);
         setStats(statsRes.data.data);
-      } catch {} finally { setLoading(false); }
+      } catch { toast.error('Failed to load payments'); } finally { setLoading(false); }
     };
     fetchData();
   }, []);

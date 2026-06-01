@@ -8,7 +8,7 @@ const rooms = [
   {
     name: 'Presidential Suite',
     price: '$899',
-    image: 'bg-gradient-to-br from-indigo-600 to-purple-700',
+    image: '/image/image1.png',
     size: '120m²',
     beds: 2,
     guests: 4,
@@ -17,7 +17,7 @@ const rooms = [
   {
     name: 'Executive Room',
     price: '$549',
-    image: 'bg-gradient-to-br from-blue-600 to-cyan-700',
+    image: '/image/image2.png',
     size: '65m²',
     beds: 1,
     guests: 2,
@@ -26,7 +26,7 @@ const rooms = [
   {
     name: 'Deluxe Suite',
     price: '$349',
-    image: 'bg-gradient-to-br from-emerald-600 to-teal-700',
+    image: '/image/image3.png',
     size: '45m²',
     beds: 1,
     guests: 2,
@@ -66,7 +66,7 @@ export default function RoomShowcase() {
               transition={{ delay: index * 0.15 }}
               className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-indigo-500/30 transition-all duration-500"
             >
-              <div className={`h-48 ${room.image} p-6 flex flex-col justify-between`}>
+              <div className="h-48 p-6 flex flex-col justify-between bg-cover bg-center" style={{ backgroundImage: `url(${room.image})` }}>
                 <div className="flex justify-between items-start">
                   <Badge variant="premium" className="text-xs">Featured</Badge>
                   <span className="text-2xl font-bold text-white">{room.price}<span className="text-sm text-white/70">/night</span></span>

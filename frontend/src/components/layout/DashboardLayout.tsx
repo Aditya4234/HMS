@@ -21,27 +21,103 @@ import {
   X,
   Building2,
   ChevronDown,
+  MessageSquare,
+  Sparkles,
+  FileText,
+  Loader2,
 } from 'lucide-react';
-import { authAPI } from '@/lib/api';
-import toast from 'react-hot-toast';
+import { authAPI, notificationAPI } from '@/lib/api';
+import { connectSocket, disconnectSocket } from '@/lib/socket';
+import { toast } from 'sonner';
 
-const sidebarLinks = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Rooms', href: '/dashboard/rooms', icon: Bed },
-  { name: 'Bookings', href: '/dashboard/bookings', icon: CalendarCheck },
-  { name: 'Customers', href: '/dashboard/customers', icon: Users },
-  { name: 'Staff', href: '/dashboard/staff', icon: Building2 },
-  { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
-  { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+const allSidebarLinks = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
+  { name: 'Rooms', href: '/dashboard/rooms', icon: Bed, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST'] },
+  { name: 'Bookings', href: '/dashboard/bookings', icon: CalendarCheck, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
+  { name: 'Customers', href: '/dashboard/customers', icon: Users, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST'] },
+  { name: 'Staff', href: '/dashboard/staff', icon: Building2, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN'] },
+  { name: 'Payments', href: '/dashboard/payments', icon: CreditCard, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
+  { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
+  { name: 'Invoices', href: '/dashboard/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
+  { name: 'AI Assistant', href: '/dashboard/ai', icon: Sparkles, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
+  { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, setUser } = useAuthStore();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const sidebarLinks = allSidebarLinks.filter(
+    (link) => !user?.role || link.roles.includes(user.role)
+  );
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated || !isAuthenticated) return;
+
+    const syncProfile = async () => {
+      try {
+        const res = await authAPI.getProfile();
+        setUser(res.data.data);
+      } catch {
+        logout();
+        router.replace('/login');
+      }
+    };
+
+    const fetchUnread = async () => {
+      try {
+        const res = await notificationAPI.getAll({ limit: 1 });
+        setUnreadCount(res.data.unreadCount || 0);
+      } catch {}
+    };
+
+    syncProfile();
+    fetchUnread();
+
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      const socket = connectSocket(token, user?.hotelId);
+      socket.on('new-notification', () => {
+        setUnreadCount((prev) => prev + 1);
+        toast.info('New notification');
+        fetchUnread();
+      });
+      socket.on('booking-updated', () => {
+        toast.info('Booking has been updated');
+      });
+      socket.on('room-status-changed', () => {
+        toast.info('Room status changed');
+      });
+    }
+
+    return () => {
+      disconnectSocket();
+    };
+  }, [isHydrated, isAuthenticated, setUser, router, user?.hotelId]);
+
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isHydrated, isAuthenticated, router]);
+
+  if (!isHydrated || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0b1120] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     try {
@@ -102,6 +178,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header className="sticky top-0 z-30 bg-[#0b1120]/80 backdrop-blur-xl border-b border-white/5">
           <div className="flex items-center justify-between h-16 px-4 lg:px-8">
             <button
+              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
               className="lg:hidden text-gray-400 hover:text-white"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
@@ -111,15 +188,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex-1" />
 
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard/notifications">
+              <Link href="/dashboard/notifications" aria-label="Notifications">
                 <button className="relative p-2 rounded-xl hover:bg-white/[0.05] text-gray-400 hover:text-white transition-all">
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[8px] h-2 px-0.5 rounded-full bg-red-500" />
+                  )}
                 </button>
               </Link>
 
               <div className="relative">
                 <button
+                  aria-label="User menu"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center space-x-3 p-2 rounded-xl hover:bg-white/[0.05] transition-all"
                 >

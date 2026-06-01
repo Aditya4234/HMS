@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authAPI } from '@/lib/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const resetSchema = z
   .object({

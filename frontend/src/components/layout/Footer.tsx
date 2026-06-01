@@ -32,16 +32,24 @@ export default function Footer() {
             <div key={category}>
               <h4 className="text-white font-semibold text-sm mb-4">{category}</h4>
               <ul className="space-y-3">
-                {links.map((link) => (
+                {links.map((link) => {
+                  const href =
+                    link === 'Features' ? '/#features' :
+                    link === 'Pricing' ? '/#pricing' :
+                    link === 'Contact' ? '/#contact' :
+                    link === 'Documentation' ? '/login' :
+                    '/register';
+                  return (
                   <li key={link}>
-                    <a
-                      href="#"
+                    <Link
+                      href={href}
                       className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
                     >
                       {link}
-                    </a>
+                    </Link>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
           ))}

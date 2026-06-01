@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authAPI } from '@/lib/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 function OTPVerificationContent() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -29,6 +29,19 @@ function OTPVerificationContent() {
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email) {
+      toast.error('Email is required');
+      return;
+    }
+    try {
+      await authAPI.resendOTP({ email });
+      toast.success('OTP resent to your email');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to resend OTP');
     }
   };
 
@@ -103,7 +116,9 @@ function OTPVerificationContent() {
 
           <p className="text-center mt-4 text-gray-500 text-sm">
             Didn't receive the code?{' '}
-            <button className="text-indigo-400 hover:text-indigo-300">Resend</button>
+            <button type="button" onClick={handleResend} className="text-indigo-400 hover:text-indigo-300">
+              Resend
+            </button>
           </p>
         </div>
       </motion.div>

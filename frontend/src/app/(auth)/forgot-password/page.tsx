@@ -11,7 +11,7 @@ import { Mail, ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const forgotSchema = z.object({
   email: z.string().email('Invalid email address'),

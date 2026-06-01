@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { notificationAPI } from '@/lib/api';
 import { Bell, CheckCheck, Trash2, Info, AlertCircle, CheckCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -22,7 +22,7 @@ export default function NotificationsPage() {
     try {
       const res = await notificationAPI.getAll();
       setNotifications(res.data.data || res.data);
-    } catch {} finally { setLoading(false); }
+    } catch { toast.error('Failed to load notifications'); } finally { setLoading(false); }
   };
 
   const markAllRead = async () => {
@@ -30,7 +30,14 @@ export default function NotificationsPage() {
       await notificationAPI.markAllAsRead();
       toast.success('All marked as read');
       fetchNotifications();
-    } catch {}
+    } catch { toast.error('Failed to mark all as read'); }
+  };
+
+  const markRead = async (id: string) => {
+    try {
+      await notificationAPI.markAsRead(id);
+      fetchNotifications();
+    } catch { toast.error('Failed to mark as read'); }
   };
 
   const deleteNotif = async (id: string) => {
@@ -38,7 +45,7 @@ export default function NotificationsPage() {
       await notificationAPI.delete(id);
       toast.success('Notification deleted');
       fetchNotifications();
-    } catch {}
+    } catch { toast.error('Failed to delete notification'); }
   };
 
   if (loading) return <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 rounded-xl bg-white/[0.02] animate-pulse" />)}</div>;
@@ -62,7 +69,8 @@ export default function NotificationsPage() {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.02 }}
-            className={`p-4 rounded-xl border ${notif.isRead ? 'bg-white/[0.01] border-white/5' : 'bg-indigo-500/[0.03] border-indigo-500/20'}`}
+            className={`p-4 rounded-xl border cursor-pointer ${notif.isRead ? 'bg-white/[0.01] border-white/5' : 'bg-indigo-500/[0.03] border-indigo-500/20'}`}
+            onClick={() => !notif.isRead && markRead(notif.id)}
           >
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-3">
@@ -77,7 +85,7 @@ export default function NotificationsPage() {
               </div>
               <div className="flex items-center space-x-2">
                 {!notif.isRead && <span className="w-2 h-2 rounded-full bg-indigo-500" />}
-                <button onClick={() => deleteNotif(notif.id)} className="p-1.5 rounded-lg hover:bg-white/[0.05] text-gray-500 hover:text-red-400 transition-all">
+                <button aria-label="Delete notification" onClick={() => deleteNotif(notif.id)} className="p-1.5 rounded-lg hover:bg-white/[0.05] text-gray-500 hover:text-red-400 transition-all">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>

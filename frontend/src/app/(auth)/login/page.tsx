@@ -7,12 +7,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Github, Chrome } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -125,26 +125,6 @@ export default function LoginPage() {
           </div>
 
           <div className="glass rounded-2xl p-8 border border-white/10">
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <button className="flex items-center justify-center space-x-2 p-3 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] transition-colors text-gray-300 text-sm">
-                <Github className="w-5 h-5" />
-                <span>GitHub</span>
-              </button>
-              <button className="flex items-center justify-center space-x-2 p-3 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] transition-colors text-gray-300 text-sm">
-                <Chrome className="w-5 h-5" />
-                <span>Google</span>
-              </button>
-            </div>
-
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-[#0b1120] px-4 text-gray-500">or continue with email</span>
-              </div>
-            </div>
-
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>

@@ -48,8 +48,10 @@ api.interceptors.response.use(
       } catch {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken');
+          localStorage.removeItem('auth-storage');
           window.location.href = '/login';
         }
+        return Promise.reject(error);
       }
     }
 
@@ -67,6 +69,7 @@ export const authAPI = {
   getProfile: () => api.get('/auth/profile'),
   updateProfile: (data: any) => api.put('/auth/profile', data),
   forgotPassword: (data: any) => api.post('/auth/forgot-password', data),
+  resendOTP: (data: any) => api.post('/auth/resend-otp', data),
   verifyOTP: (data: any) => api.post('/auth/verify-otp', data),
   resetPassword: (data: any) => api.post('/auth/reset-password', data),
   changePassword: (data: any) => api.put('/auth/change-password', data),
@@ -75,11 +78,12 @@ export const authAPI = {
 export const roomAPI = {
   getAll: (params?: any) => api.get('/rooms', { params }),
   getById: (id: string) => api.get(`/rooms/${id}`),
-  create: (data: any) => api.post('/rooms', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  update: (id: string, data: any) => api.put(`/rooms/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  create: (data: any) => api.post('/rooms', data),
+  update: (id: string, data: any) => api.put(`/rooms/${id}`, data),
   delete: (id: string) => api.delete(`/rooms/${id}`),
   updateStatus: (id: string, status: string) => api.patch(`/rooms/${id}/status`, { status }),
   getAvailable: (params?: any) => api.get('/rooms/available', { params }),
+  search: (params?: any) => api.get('/rooms/search', { params }),
 };
 
 export const bookingAPI = {
@@ -134,4 +138,22 @@ export const hotelAPI = {
   getById: (id: string) => api.get(`/hotels/${id}`),
   update: (data: any) => api.put('/hotels', data),
   getSettings: () => api.get('/hotels/settings/info'),
+};
+
+export const reviewAPI = {
+  getAll: (params?: any) => api.get('/reviews', { params }),
+  getById: (id: string) => api.get(`/reviews/${id}`),
+  create: (data: any) => api.post('/reviews', data),
+  update: (id: string, data: any) => api.put(`/reviews/${id}`, data),
+  delete: (id: string) => api.delete(`/reviews/${id}`),
+};
+
+export const aiAPI = {
+  searchRooms: (data: { query: string }) => api.post('/ai/search', data),
+  chat: (data: { message: string; history?: any[] }) => api.post('/ai/chat', data),
+};
+
+export const invoiceAPI = {
+  getAll: (params?: any) => api.get('/invoices', { params }),
+  getById: (id: string) => api.get(`/invoices/${id}`),
 };

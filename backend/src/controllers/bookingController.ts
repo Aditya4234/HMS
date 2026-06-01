@@ -5,6 +5,8 @@ import { AuthRequest } from '../middlewares/auth';
 import { AppError } from '../middlewares/errorHandler';
 import { generateBookingReference, calculateNights, parsePagination } from '../utils/helpers';
 import { sendBookingConfirmation } from '../config/nodemailer';
+import { createNotification } from './notificationController';
+import { assertBookingAccess } from '../utils/authorization';
 
 export const createBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -86,6 +88,28 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       console.error('Booking confirmation email failed:', emailError);
     }
 
+    await createNotification(
+      userId,
+      'Booking Confirmed',
+      `Your booking ${booking.bookingReference} for room ${room.roomNumber} has been created.`,
+      'BOOKING',
+      `/dashboard/bookings`
+    ).catch(() => {});
+
+    const hotelAdmins = await prisma.user.findMany({
+      where: { hotelId: room.hotelId, role: { in: ['HOTEL_ADMIN', 'RECEPTIONIST'] } },
+      select: { id: true },
+    });
+    for (const admin of hotelAdmins) {
+      await createNotification(
+        admin.id,
+        'New Booking',
+        `New booking ${booking.bookingReference} for room ${room.roomNumber}.`,
+        'BOOKING',
+        `/dashboard/bookings`
+      ).catch(() => {});
+    }
+
     return ApiResponse.success(res, booking, 'Booking created successfully', 201);
   } catch (error) {
     next(error);
@@ -133,6 +157,7 @@ export const getBookings = async (req: AuthRequest, res: Response, next: NextFun
 export const getBookingById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    await assertBookingAccess(req.user!, id);
 
     const booking = await prisma.booking.findFirst({
       where: { id, deletedAt: null },
@@ -156,12 +181,23 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response, next:
     const { id } = req.params;
     const { status } = req.body;
 
-    const booking = await prisma.booking.findUnique({
+    const bookingWithRoom = await prisma.booking.findUnique({
       where: { id },
       include: { room: true },
     });
+    if (!bookingWithRoom) throw new AppError('Booking not found', 404);
 
-    if (!booking) throw new AppError('Booking not found', 404);
+    if (req.user?.role === 'CUSTOMER' && bookingWithRoom.userId !== req.user.userId) {
+      throw new AppError('Access denied', 403);
+    }
+    if (
+      req.user?.role !== 'SUPER_ADMIN' &&
+      req.user?.role !== 'CUSTOMER' &&
+      req.user?.hotelId &&
+      bookingWithRoom.room.hotelId !== req.user.hotelId
+    ) {
+      throw new AppError('Access denied', 403);
+    }
 
     const updatedBooking = await prisma.booking.update({
       where: { id },
@@ -170,19 +206,27 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response, next:
 
     if (status === 'CHECKED_IN') {
       await prisma.room.update({
-        where: { id: booking.roomId },
+        where: { id: bookingWithRoom.roomId },
         data: { status: 'OCCUPIED' },
       });
     } else if (status === 'CHECKED_OUT' || status === 'CANCELLED') {
       await prisma.room.update({
-        where: { id: booking.roomId },
+        where: { id: bookingWithRoom.roomId },
         data: { status: 'AVAILABLE' },
       });
     }
 
+    await createNotification(
+      bookingWithRoom.userId,
+      'Booking Status Updated',
+      `Your booking status is now ${status}.`,
+      'BOOKING',
+      `/dashboard/bookings`
+    ).catch(() => {});
+
     const io = req.app.get('io');
-    if (io && booking.room.hotelId) {
-      io.to(`hotel-${booking.room.hotelId}`).emit('booking-status-update', {
+    if (io && bookingWithRoom.room.hotelId) {
+      io.to(`hotel-${bookingWithRoom.room.hotelId}`).emit('booking-status-update', {
         bookingId: id,
         status,
       });
@@ -197,6 +241,7 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response, next:
 export const cancelBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    await assertBookingAccess(req.user!, id);
 
     const booking = await prisma.booking.findUnique({
       where: { id },

@@ -7,8 +7,8 @@ import { generateEmployeeId, parsePagination } from '../utils/helpers';
 
 export const createStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const hotelId = req.user?.hotelId;
-    if (!hotelId) throw new AppError('Hotel not found', 404);
+    const hotelId = req.body.hotelId || req.user?.hotelId;
+    if (!hotelId) throw new AppError('Hotel ID is required. Specify a hotelId or associate your account with a hotel.', 400);
 
     const { fullName, email, phoneNumber, position, department, salary, gender, address, shift } = req.body;
 
@@ -39,13 +39,13 @@ export const createStaff = async (req: AuthRequest, res: Response, next: NextFun
 
 export const getStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const hotelId = req.user?.hotelId;
-    if (!hotelId) throw new AppError('Hotel not found', 404);
-
     const { page, limit, skip } = parsePagination(req.query);
     const { department, position, isActive } = req.query;
 
-    const where: any = { hotelId, deletedAt: null };
+    const where: any = { deletedAt: null };
+    if (req.user?.hotelId) {
+      where.hotelId = req.user.hotelId;
+    }
     if (department) where.department = department as string;
     if (position) where.position = position as string;
     if (isActive !== undefined) where.isActive = isActive === 'true';
@@ -69,9 +69,11 @@ export const getStaff = async (req: AuthRequest, res: Response, next: NextFuncti
 export const getStaffById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const staff = await prisma.staff.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const where: any = { id, deletedAt: null };
+    if (req.user?.hotelId) {
+      where.hotelId = req.user.hotelId;
+    }
+    const staff = await prisma.staff.findFirst({ where });
     if (!staff) throw new AppError('Staff not found', 404);
     return ApiResponse.success(res, staff);
   } catch (error) {
@@ -82,7 +84,11 @@ export const getStaffById = async (req: AuthRequest, res: Response, next: NextFu
 export const updateStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const staff = await prisma.staff.findFirst({ where: { id } });
+    const where: any = { id };
+    if (req.user?.hotelId) {
+      where.hotelId = req.user.hotelId;
+    }
+    const staff = await prisma.staff.findFirst({ where });
     if (!staff) throw new AppError('Staff not found', 404);
 
     const updatedStaff = await prisma.staff.update({
@@ -99,6 +105,12 @@ export const updateStaff = async (req: AuthRequest, res: Response, next: NextFun
 export const deleteStaff = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const where: any = { id };
+    if (req.user?.hotelId) {
+      where.hotelId = req.user.hotelId;
+    }
+    const staff = await prisma.staff.findFirst({ where });
+    if (!staff) throw new AppError('Staff not found', 404);
     await prisma.staff.update({
       where: { id },
       data: { deletedAt: new Date(), isActive: false },

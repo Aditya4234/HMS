@@ -22,6 +22,7 @@ interface SearchParams {
   amenities?: string[];
   hotelName?: string;
   city?: string;
+  summary?: string;
 }
 
 export const searchRoomsWithAI = async (query: string, hotelId?: string) => {

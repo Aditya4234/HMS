@@ -1,33 +1,58 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { hotelAPI, authAPI } from '@/lib/api';
-import { Settings, Save, User, Lock, Building2 } from 'lucide-react';
+import { User, Lock, Building2, Save } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const [hotel, setHotel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [profileForm, setProfileForm] = useState({ fullName: '', phoneNumber: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
+  const [hotelForm, setHotelForm] = useState<any>({});
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
+        setProfileForm({ fullName: user?.fullName || '', phoneNumber: user?.phoneNumber || '' });
         if (user?.role !== 'CUSTOMER') {
           const res = await hotelAPI.getSettings();
           setHotel(res.data.data);
+          setHotelForm(res.data.data || {});
         }
-      } catch {} finally { setLoading(false); }
+      } catch { toast.error('Failed to load settings'); } finally { setLoading(false); }
     };
     fetchSettings();
   }, [user]);
+
+  const updateProfile = async () => {
+    try {
+      await authAPI.updateProfile(profileForm);
+      setUser({ ...user!, fullName: profileForm.fullName, phoneNumber: profileForm.phoneNumber });
+      toast.success('Profile updated');
+    } catch { toast.error('Failed to update profile'); }
+  };
+
+  const updatePassword = async () => {
+    try {
+      await authAPI.changePassword(passwordForm);
+      setPasswordForm({ currentPassword: '', newPassword: '' });
+      toast.success('Password updated');
+    } catch { toast.error('Failed to update password'); }
+  };
+
+  const updateHotelSettings = async () => {
+    try {
+      await hotelAPI.update(hotelForm);
+      toast.success('Hotel settings updated');
+    } catch { toast.error('Failed to update hotel settings'); }
+  };
 
   if (loading) return <div className="space-y-4">{[1, 2, 3].map((i) => <div key={i} className="h-32 rounded-xl bg-white/[0.02] animate-pulse" />)}</div>;
 
@@ -50,16 +75,21 @@ export default function SettingsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-300 mb-2">Full Name</label>
-              <Input defaultValue={user?.fullName} className="bg-white/[0.02] border-white/10 text-white" />
+              <Input value={profileForm.fullName} onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                className="bg-white/[0.02] border-white/10 text-white" />
             </div>
             <div>
               <label className="block text-sm text-gray-300 mb-2">Email</label>
-              <Input defaultValue={user?.email} disabled className="bg-white/[0.02] border-white/10 text-white/50" />
+              <Input value={user?.email || ''} disabled className="bg-white/[0.02] border-white/10 text-white/50" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Phone Number</label>
+              <Input value={profileForm.phoneNumber} onChange={(e) => setProfileForm({ ...profileForm, phoneNumber: e.target.value })}
+                className="bg-white/[0.02] border-white/10 text-white" />
             </div>
           </div>
-          <Button variant="gradient" className="flex items-center space-x-2">
-            <Save className="w-4 h-4" />
-            <span>Save Changes</span>
+          <Button variant="gradient" className="flex items-center space-x-2" onClick={updateProfile}>
+            <Save className="w-4 h-4" /><span>Save Changes</span>
           </Button>
         </CardContent>
       </Card>
@@ -76,14 +106,18 @@ export default function SettingsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-300 mb-2">Current Password</label>
-              <Input type="password" className="bg-white/[0.02] border-white/10 text-white" />
+              <Input type="password" value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                className="bg-white/[0.02] border-white/10 text-white" />
             </div>
             <div>
               <label className="block text-sm text-gray-300 mb-2">New Password</label>
-              <Input type="password" className="bg-white/[0.02] border-white/10 text-white" />
+              <Input type="password" value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                className="bg-white/[0.02] border-white/10 text-white" />
             </div>
           </div>
-          <Button variant="outline" className="text-white border-white/20">Update Password</Button>
+          <Button variant="outline" className="text-white border-white/20" onClick={updatePassword}>Update Password</Button>
         </CardContent>
       </Card>
 
@@ -100,32 +134,38 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Hotel Name</label>
-                <Input defaultValue={hotel.name} className="bg-white/[0.02] border-white/10 text-white" />
+                <Input value={hotelForm.name || ''} onChange={(e) => setHotelForm({ ...hotelForm, name: e.target.value })}
+                  className="bg-white/[0.02] border-white/10 text-white" />
               </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Currency</label>
-                <Input defaultValue={hotel.currency} className="bg-white/[0.02] border-white/10 text-white" />
+                <Input value={hotelForm.currency || ''} onChange={(e) => setHotelForm({ ...hotelForm, currency: e.target.value })}
+                  className="bg-white/[0.02] border-white/10 text-white" />
               </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Tax Rate (%)</label>
-                <Input defaultValue={hotel.taxRate} type="number" className="bg-white/[0.02] border-white/10 text-white" />
+                <Input type="number" value={hotelForm.taxRate || ''}
+                  onChange={(e) => setHotelForm({ ...hotelForm, taxRate: parseFloat(e.target.value) || 0 })}
+                  className="bg-white/[0.02] border-white/10 text-white" />
               </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Check-in Time</label>
-                <Input defaultValue={hotel.checkInTime} className="bg-white/[0.02] border-white/10 text-white" />
+                <Input value={hotelForm.checkInTime || ''} onChange={(e) => setHotelForm({ ...hotelForm, checkInTime: e.target.value })}
+                  className="bg-white/[0.02] border-white/10 text-white" />
               </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Check-out Time</label>
-                <Input defaultValue={hotel.checkOutTime} className="bg-white/[0.02] border-white/10 text-white" />
+                <Input value={hotelForm.checkOutTime || ''} onChange={(e) => setHotelForm({ ...hotelForm, checkOutTime: e.target.value })}
+                  className="bg-white/[0.02] border-white/10 text-white" />
               </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Timezone</label>
-                <Input defaultValue={hotel.timezone} className="bg-white/[0.02] border-white/10 text-white" />
+                <Input value={hotelForm.timezone || ''} onChange={(e) => setHotelForm({ ...hotelForm, timezone: e.target.value })}
+                  className="bg-white/[0.02] border-white/10 text-white" />
               </div>
             </div>
-            <Button variant="gradient" className="flex items-center space-x-2">
-              <Save className="w-4 h-4" />
-              <span>Save Hotel Settings</span>
+            <Button variant="gradient" className="flex items-center space-x-2" onClick={updateHotelSettings}>
+              <Save className="w-4 h-4" /><span>Save Hotel Settings</span>
             </Button>
           </CardContent>
         </Card>

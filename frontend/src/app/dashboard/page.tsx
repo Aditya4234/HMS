@@ -8,7 +8,7 @@ import { dashboardAPI } from '@/lib/api';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import {
   TrendingUp, Users, Bed, CalendarCheck, DollarSign,
-  ArrowUpRight, ArrowDownRight, Activity,
+  ArrowUpRight, ArrowDownRight, Activity, AlertCircle,
 } from 'lucide-react';
 
 const statsConfig = [
@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState<any[]>([]);
   const [topRooms, setTopRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,8 +39,11 @@ export default function DashboardPage() {
         setRevenueChart(revenueRes.data.data);
         setActivities(activitiesRes.data.data);
         setTopRooms(roomsRes.data.data);
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
+      } catch (error: any) {
+        if (error.response?.status !== 401) {
+          console.error('Failed to fetch dashboard data:', error);
+          setError('Failed to load dashboard data. Please try again.');
+        }
       } finally {
         setLoading(false);
       }
@@ -60,6 +64,17 @@ export default function DashboardPage() {
           ))}
         </div>
         <div className="h-80 rounded-2xl bg-white/[0.02] border border-white/5 animate-pulse" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <p className="text-gray-400">{error}</p>
+        </div>
       </div>
     );
   }

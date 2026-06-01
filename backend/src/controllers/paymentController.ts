@@ -5,6 +5,8 @@ import { AuthRequest } from '../middlewares/auth';
 import { AppError } from '../middlewares/errorHandler';
 import { createPaymentIntent } from '../config/stripe';
 import { generateInvoiceNumber } from '../utils/helpers';
+import { assertPaymentAccess } from '../utils/authorization';
+import { createNotification } from './notificationController';
 
 export const createPayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -16,6 +18,18 @@ export const createPayment = async (req: AuthRequest, res: Response, next: NextF
     });
 
     if (!booking) throw new AppError('Booking not found', 404);
+
+    if (req.user?.role === 'CUSTOMER' && booking.userId !== req.user.userId) {
+      throw new AppError('Access denied', 403);
+    }
+    if (
+      req.user?.role !== 'SUPER_ADMIN' &&
+      req.user?.role !== 'CUSTOMER' &&
+      req.user?.hotelId &&
+      booking.room.hotelId !== req.user.hotelId
+    ) {
+      throw new AppError('Access denied', 403);
+    }
 
     const remainingAmount = booking.totalAmount - booking.paidAmount;
     if (remainingAmount <= 0) throw new AppError('Booking is already fully paid', 400);
@@ -61,6 +75,7 @@ export const confirmPayment = async (req: AuthRequest, res: Response, next: Next
   try {
     const { paymentId, transactionId } = req.body;
 
+    await assertPaymentAccess(req.user!, paymentId);
     const existingPayment = await prisma.payment.findUnique({ where: { id: paymentId } });
 
     const payment = await prisma.payment.update({
@@ -92,6 +107,14 @@ export const confirmPayment = async (req: AuthRequest, res: Response, next: Next
         paymentId: payment.id,
       },
     });
+
+    await createNotification(
+      payment.booking.userId,
+      'Payment Received',
+      `Payment of ${payment.amount} ${payment.currency} confirmed for your booking.`,
+      'PAYMENT',
+      `/dashboard/payments`
+    ).catch(() => {});
 
     return ApiResponse.success(res, { payment, invoice }, 'Payment confirmed');
   } catch (error) {
@@ -142,6 +165,7 @@ export const processRefund = async (req: AuthRequest, res: Response, next: NextF
     const { id } = req.params;
     const { amount, reason } = req.body;
 
+    await assertPaymentAccess(req.user!, id);
     const payment = await prisma.payment.findUnique({ where: { id } });
     if (!payment) throw new AppError('Payment not found', 404);
     if (payment.status !== 'COMPLETED') throw new AppError('Payment cannot be refunded', 400);

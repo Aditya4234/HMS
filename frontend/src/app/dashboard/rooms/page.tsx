@@ -1,34 +1,79 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { roomAPI } from '@/lib/api';
-import { formatCurrency, getStatusColor } from '@/lib/utils';
-import { Plus, Search, Bed, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { formatCurrency } from '@/lib/utils';
+import { Plus, Search, Bed, Edit, Trash2, X } from 'lucide-react';
+import { Pagination } from '@/components/ui/pagination';
+import { toast } from 'sonner';
+import { useAuthStore } from '@/store/authStore';
+
+const ADMIN_ROLES = ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST'];
+const PAGE_SIZE = 10;
 
 export default function RoomsPage() {
+  const { user } = useAuthStore();
+  const canManage = user && ADMIN_ROLES.includes(user.role);
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editRoom, setEditRoom] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [form, setForm] = useState({
+    roomNumber: '', roomType: '', floor: '', description: '',
+    pricePerNight: '', capacity: '2', size: '', beds: '1', status: 'AVAILABLE',
+  });
 
-  useEffect(() => {
-    fetchRooms();
-  }, []);
+  useEffect(() => { fetchRooms(); }, [page]);
 
   const fetchRooms = async () => {
     try {
-      const res = await roomAPI.getAll();
+      const res = await roomAPI.getAll({ page, limit: PAGE_SIZE });
       setRooms(res.data.data);
-    } catch (error) {
-      toast.error('Failed to load rooms');
-    } finally {
-      setLoading(false);
-    }
+      if (res.data.pagination) {
+        setTotalPages(res.data.pagination.totalPages);
+      }
+    } catch { toast.error('Failed to load rooms');
+    } finally { setLoading(false); }
+  };
+
+  const openCreate = () => {
+    setEditRoom(null);
+    setForm({ roomNumber: '', roomType: '', floor: '', description: '', pricePerNight: '', capacity: '2', size: '', beds: '1', status: 'AVAILABLE' });
+    setShowModal(true);
+  };
+
+  const openEdit = (room: any) => {
+    setEditRoom(room);
+    setForm({
+      roomNumber: room.roomNumber, roomType: room.roomType, floor: room.floor?.toString() || '',
+      description: room.description || '', pricePerNight: room.pricePerNight.toString(),
+      capacity: room.capacity.toString(), size: room.size?.toString() || '',
+      beds: room.beds.toString(), status: room.status,
+    });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editRoom) {
+        await roomAPI.update(editRoom.id, form);
+        toast.success('Room updated');
+      } else {
+        await roomAPI.create(form);
+        toast.success('Room created');
+      }
+      setShowModal(false);
+      fetchRooms();
+    } catch { toast.error('Failed to save room'); }
   };
 
   const handleDelete = async (id: string) => {
@@ -37,9 +82,7 @@ export default function RoomsPage() {
       await roomAPI.delete(id);
       toast.success('Room deleted');
       fetchRooms();
-    } catch {
-      toast.error('Failed to delete room');
-    }
+    } catch { toast.error('Failed to delete room'); }
   };
 
   const filtered = rooms.filter((r) =>
@@ -63,33 +106,27 @@ export default function RoomsPage() {
           <h1 className="text-2xl font-bold text-white">Rooms</h1>
           <p className="text-gray-500 text-sm">Manage your hotel rooms</p>
         </div>
-        <Button variant="gradient" className="flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
-          <span>Add Room</span>
-        </Button>
+        {canManage && (
+          <Button variant="gradient" className="flex items-center space-x-2" onClick={openCreate}>
+            <Plus className="w-4 h-4" />
+            <span>Add Room</span>
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <Input
-            placeholder="Search rooms..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-white/[0.02] border-white/10 text-white placeholder:text-gray-600"
-          />
+          <Input placeholder="Search rooms..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 bg-white/[0.02] border-white/10 text-white placeholder:text-gray-600" />
         </div>
       </div>
 
       <div className="grid gap-4">
         {filtered.map((room, i) => (
-          <motion.div
-            key={room.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+          <motion.div key={room.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/20 transition-all"
-          >
+            className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/20 transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
@@ -110,17 +147,17 @@ export default function RoomsPage() {
                   <p className="text-lg font-bold text-white">{formatCurrency(room.pricePerNight)}</p>
                   <p className="text-xs text-gray-500">per night</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button className="p-2 rounded-lg hover:bg-white/[0.05] text-gray-400 hover:text-white transition-all">
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(room.id)}
-                    className="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {canManage && (
+                  <div className="flex items-center space-x-2">
+                    <button aria-label="Edit room" onClick={() => openEdit(room)} className="p-2 rounded-lg hover:bg-white/[0.05] text-gray-400 hover:text-white transition-all">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button aria-label="Delete room" onClick={() => handleDelete(room.id)}
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
@@ -131,7 +168,92 @@ export default function RoomsPage() {
             <p className="text-gray-400">No rooms found</p>
           </div>
         )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+
+      <AnimatePresence>
+        {showModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowModal(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-2xl bg-[#0f172a] border border-white/10 p-6 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">{editRoom ? 'Edit Room' : 'Add Room'}</h2>
+                <button aria-label="Close" onClick={() => setShowModal(false)} className="p-2 rounded-lg hover:bg-white/[0.05] text-gray-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Room Number *</label>
+                    <Input value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })}
+                      className="bg-white/[0.02] border-white/10 text-white" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Room Type *</label>
+                    <select value={form.roomType} onChange={(e) => setForm({ ...form, roomType: e.target.value })}
+                      className="w-full rounded-xl bg-white/[0.02] border border-white/10 text-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                      <option value="" className="bg-[#0f172a]">Select type</option>
+                      <option value="Single" className="bg-[#0f172a]">Single</option>
+                      <option value="Double" className="bg-[#0f172a]">Double</option>
+                      <option value="Suite" className="bg-[#0f172a]">Suite</option>
+                      <option value="Deluxe" className="bg-[#0f172a]">Deluxe</option>
+                      <option value="Penthouse" className="bg-[#0f172a]">Penthouse</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Floor</label>
+                    <Input type="number" value={form.floor} onChange={(e) => setForm({ ...form, floor: e.target.value })}
+                      className="bg-white/[0.02] border-white/10 text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Price/Night *</label>
+                    <Input type="number" step="0.01" value={form.pricePerNight} onChange={(e) => setForm({ ...form, pricePerNight: e.target.value })}
+                      className="bg-white/[0.02] border-white/10 text-white" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Capacity</label>
+                    <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+                      className="bg-white/[0.02] border-white/10 text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Beds</label>
+                    <Input type="number" value={form.beds} onChange={(e) => setForm({ ...form, beds: e.target.value })}
+                      className="bg-white/[0.02] border-white/10 text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Size (sq ft)</label>
+                    <Input type="number" value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })}
+                      className="bg-white/[0.02] border-white/10 text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Status</label>
+                    <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
+                      className="w-full rounded-xl bg-white/[0.02] border border-white/10 text-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                      <option value="AVAILABLE" className="bg-[#0f172a]">Available</option>
+                      <option value="OCCUPIED" className="bg-[#0f172a]">Occupied</option>
+                      <option value="MAINTENANCE" className="bg-[#0f172a]">Maintenance</option>
+                      <option value="RESERVED" className="bg-[#0f172a]">Reserved</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Description</label>
+                  <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="w-full rounded-xl bg-white/[0.02] border border-white/10 text-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]" />
+                </div>
+                <div className="flex space-x-3 pt-2">
+                  <Button type="button" variant="outline" className="flex-1 text-white border-white/20" onClick={() => setShowModal(false)}>Cancel</Button>
+                  <Button type="submit" variant="gradient" className="flex-1">{editRoom ? 'Update' : 'Create'} Room</Button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
