@@ -24,8 +24,6 @@ services:
         value: 7d
       - key: FRONTEND_URL
         value: https://your-vercel-app.vercel.app
-      - key: API_URL
-        value: https://your-api.onrender.com/api
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
