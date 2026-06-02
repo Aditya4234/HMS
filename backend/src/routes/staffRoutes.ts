@@ -1,3 +1,68 @@
+/**
+ * @swagger
+ * tags:
+ *   name: Staff
+ *   description: Staff management endpoints
+ *
+ * /api/staff:
+ *   get:
+ *     tags: [Staff]
+ *     summary: Get all staff members
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of staff
+ *   post:
+ *     tags: [Staff]
+ *     summary: Create a staff member
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Staff created
+ *
+ * /api/staff/{id}:
+ *   get:
+ *     tags: [Staff]
+ *     summary: Get staff by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Staff details
+ *   put:
+ *     tags: [Staff]
+ *     summary: Update staff member
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Staff updated
+ *   delete:
+ *     tags: [Staff]
+ *     summary: Delete staff member
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Staff deleted
+ */
 import { Router } from 'express';
 import { authenticate, authorize } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';

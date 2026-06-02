@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eye, EyeOff, Mail, Lock, User, Phone, Building2, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, Building2, ArrowRight, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
@@ -18,14 +18,15 @@ const registerSchema = z
   .object({
     fullName: z.string().min(2, 'Name must be at least 2 characters'),
     email: z.string().email('Invalid email address'),
-    phoneNumber: z.string().optional(),
+    phoneNumber: z.string().regex(/^\+?[\d\s\-()]{7,20}$/, 'Invalid phone number').optional().or(z.literal('')),
     hotelName: z.string().optional(),
     password: z
       .string()
       .min(8, 'Password must be at least 8 characters')
       .regex(/[A-Z]/, 'Must contain an uppercase letter')
       .regex(/[a-z]/, 'Must contain a lowercase letter')
-      .regex(/[0-9]/, 'Must contain a number'),
+      .regex(/[0-9]/, 'Must contain a number')
+      .regex(/[^A-Za-z0-9]/, 'Must contain a special character'),
     confirmPassword: z.string(),
     terms: z.boolean().refine((val) => val === true, 'You must accept the terms'),
   })
@@ -39,16 +40,21 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
+
+  const passwordValue = watch('password', '');
 
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
@@ -57,13 +63,15 @@ export default function RegisterPage() {
         fullName: data.fullName,
         email: data.email,
         password: data.password,
-        phoneNumber: data.phoneNumber,
-        hotelName: data.hotelName,
+        phoneNumber: data.phoneNumber || undefined,
+        hotelName: data.hotelName || undefined,
       });
       const { user, accessToken } = response.data.data;
       login(user, accessToken);
-      toast.success('Account created successfully!');
-      router.push('/dashboard');
+      toast.success('Account created! Please verify your email.');
+      setRegistered(true);
+      setRegisteredEmail(data.email);
+      router.push('/otp-verification?email=' + encodeURIComponent(data.email) + '&type=verification');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {
@@ -166,6 +174,23 @@ export default function RegisterPage() {
                     </button>
                   </div>
                   {errors.password && <p className="text-red-400 text-xs mt-1">{String(errors.password.message)}</p>}
+                  <div className="mt-2 space-y-1">
+                    {[
+                      { label: 'At least 8 characters', test: (v: string) => v.length >= 8 },
+                      { label: 'Uppercase letter', test: (v: string) => /[A-Z]/.test(v) },
+                      { label: 'Lowercase letter', test: (v: string) => /[a-z]/.test(v) },
+                      { label: 'Number', test: (v: string) => /[0-9]/.test(v) },
+                      { label: 'Special character', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+                    ].map((rule) => {
+                      const passed = rule.test(passwordValue);
+                      return (
+                        <div key={rule.label} className="flex items-center gap-1.5">
+                          <div className={`w-1.5 h-1.5 rounded-full ${passed ? 'bg-green-500' : 'bg-gray-600'}`} />
+                          <span className={`text-xs ${passed ? 'text-green-400' : 'text-gray-500'}`}>{rule.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div>

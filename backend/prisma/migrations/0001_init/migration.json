@@ -1,0 +1,9 @@
+{
+  "version": "5.22.0",
+  "steps": [],
+  "datasource": "postgresql",
+  "generator": {
+    "provider": "prisma-client-js",
+    "binaryTargets": ["native", "linux-musl-openssl-3.0.x"]
+  }
+}

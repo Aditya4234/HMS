@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../utils/jwt';
 import { AppError } from './errorHandler';
 import prisma from '../config/database';
+import { MongoUser } from '../models/MongoUser';
+import { UserRole } from '@prisma/client';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -27,10 +29,23 @@ export const authenticate = async (
 
     const decoded = verifyAccessToken(token);
     
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, email: true, role: true, hotelId: true, isActive: true },
     });
+
+    if (!user && decoded.userId.length === 24) {
+      const mongoUser = await MongoUser.findById(decoded.userId);
+      if (mongoUser) {
+        user = {
+          id: mongoUser._id.toString(),
+          email: mongoUser.email,
+          role: mongoUser.role as UserRole,
+          hotelId: null as any,
+          isActive: mongoUser.isActive,
+        };
+      }
+    }
 
     if (!user || !user.isActive) {
       throw new AppError('User not found or deactivated', 401);

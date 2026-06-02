@@ -4,9 +4,16 @@ dist/
 build/
 .env
 .env.local
+.env.test
 logs/
 uploads/
+coverage/
 *.log
 .DS_Store
 .vscode/
+.idea/
+*.tsbuildinfo
 cookies.txt
+.cache/
+tmp/
+temp/

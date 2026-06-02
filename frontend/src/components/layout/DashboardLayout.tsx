@@ -24,6 +24,7 @@ import {
   MessageSquare,
   FileText,
   Loader2,
+  UserCircle,
 } from 'lucide-react';
 import { authAPI, notificationAPI } from '@/lib/api';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
@@ -39,6 +40,7 @@ const allSidebarLinks = [
   { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
   { name: 'Invoices', href: '/dashboard/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
   { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
+  { name: 'Profile', href: '/dashboard/profile', icon: UserCircle, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
 ];
 
@@ -226,6 +228,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <p className="text-xs text-gray-500">{user?.email}</p>
                       </div>
                       <div className="p-2">
+                        <Link
+                          href="/dashboard/profile"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/[0.05] rounded-lg"
+                        >
+                          <UserCircle className="w-4 h-4" />
+                          <span>Profile</span>
+                        </Link>
                         <Link
                           href="/dashboard/settings"
                           onClick={() => setUserMenuOpen(false)}

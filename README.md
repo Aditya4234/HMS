@@ -10,7 +10,7 @@ Full-stack hotel management platform with **Node.js/Express** backend and **Next
 - Booking lifecycle with conflict detection and email notifications
 - Payments (Stripe + cash) with invoices
 - Staff & customer management
-- Reviews, AI room search (OpenRouter), real-time Socket.IO events
+- Reviews, real-time Socket.IO events
 - Admin dashboard with analytics
 
 ## Tech Stack
@@ -70,7 +70,9 @@ App: `http://localhost:3000`
 | `STRIPE_WEBHOOK_SECRET` | For webhooks | Stripe webhook signing |
 | `CLOUDINARY_*` | For room images | Cloudinary credentials |
 | `SMTP_*` | For emails | Gmail or SMTP provider |
-| `OPENROUTER_API_KEY` | For AI search | OpenRouter API key |
+| `GOOGLE_CLIENT_ID` | For Google OAuth | Google OAuth client ID |
+| `RAZORPAY_*` | For Razorpay payments | Razorpay credentials |
+| `PAYPAL_*` | For PayPal payments | PayPal credentials |
 
 **Frontend** (`frontend/.env.local`):
 

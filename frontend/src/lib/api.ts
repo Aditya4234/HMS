@@ -73,6 +73,10 @@ export const authAPI = {
   verifyOTP: (data: any) => api.post('/auth/verify-otp', data),
   resetPassword: (data: any) => api.post('/auth/reset-password', data),
   changePassword: (data: any) => api.put('/auth/change-password', data),
+  verifyEmail: (data: any) => api.post('/auth/verify-email', data),
+  resendVerification: (data: any) => api.post('/auth/resend-verification', data),
+  deleteAccount: () => api.delete('/auth/account'),
+  getCsrfToken: () => api.get('/csrf-token'),
 };
 
 export const roomAPI = {
@@ -148,9 +152,8 @@ export const reviewAPI = {
   delete: (id: string) => api.delete(`/reviews/${id}`),
 };
 
-export const aiAPI = {
-  searchRooms: (data: { query: string }) => api.post('/ai/search', data),
-  chat: (data: { message: string; history?: any[] }) => api.post('/ai/chat', data),
+export const googleAuthAPI = {
+  login: (credential: string) => api.post('/auth/google', { credential }),
 };
 
 export const invoiceAPI = {

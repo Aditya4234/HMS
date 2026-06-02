@@ -4,6 +4,8 @@ import { ApiResponse } from '../utils/apiResponse';
 import { AuthRequest } from '../middlewares/auth';
 import { AppError } from '../middlewares/errorHandler';
 import { createPaymentIntent } from '../config/stripe';
+import { createRazorpayOrder, getRazorpay } from '../config/razorpay';
+import { createPayPalOrder } from '../config/paypal';
 import { generateInvoiceNumber } from '../utils/helpers';
 import { assertPaymentAccess } from '../utils/authorization';
 import { createNotification } from './notificationController';
@@ -41,6 +43,12 @@ export const createPayment = async (req: AuthRequest, res: Response, next: NextF
         booking.currency,
         { bookingId: booking.id, bookingReference: booking.bookingReference }
       );
+    } else if (method === 'RAZORPAY') {
+      const razorpayOrder = await createRazorpayOrder(remainingAmount, booking.currency, booking.bookingReference);
+      paymentIntent = { id: razorpayOrder.id, client_secret: razorpayOrder.id };
+    } else if (method === 'PAYPAL') {
+      const paypalOrder = await createPayPalOrder(remainingAmount, booking.currency);
+      paymentIntent = { id: paypalOrder.result.id, client_secret: paypalOrder.result.id };
     }
 
     const payment = await prisma.payment.create({
@@ -171,6 +179,12 @@ export const processRefund = async (req: AuthRequest, res: Response, next: NextF
     if (payment.status !== 'COMPLETED') throw new AppError('Payment cannot be refunded', 400);
 
     const refundAmount = amount || payment.amount;
+
+    if (payment.method === 'RAZORPAY' && process.env.RAZORPAY_KEY_ID && payment.transactionId) {
+      await getRazorpay().payments.refund(payment.transactionId, {
+        amount: Math.round(refundAmount * 100),
+      });
+    }
 
     await prisma.payment.update({
       where: { id },

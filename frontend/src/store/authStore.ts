@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface User {
+export interface User {
   id: string;
   fullName: string;
   email: string;
@@ -10,14 +10,18 @@ interface User {
   role: string;
   hotelId?: string;
   hotel?: any;
+  emailVerified?: boolean;
+  lastLogin?: string;
 }
 
 interface AuthState {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  csrfToken: string | null;
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
+  setCsrfToken: (token: string | null) => void;
   login: (user: User, token: string) => void;
   logout: () => void;
 }
@@ -28,6 +32,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       isAuthenticated: false,
+      csrfToken: null,
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setAccessToken: (accessToken) => {
         if (typeof window !== 'undefined' && accessToken) {
@@ -35,6 +40,7 @@ export const useAuthStore = create<AuthState>()(
         }
         set({ accessToken });
       },
+      setCsrfToken: (csrfToken) => set({ csrfToken }),
       login: (user, accessToken) => {
         if (typeof window !== 'undefined') {
           localStorage.setItem('accessToken', accessToken);

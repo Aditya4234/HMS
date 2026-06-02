@@ -65,6 +65,11 @@ export default function Navbar() {
               </Link>
             ) : (
               <>
+                <Link href="/mongo-login">
+                  <Button variant="ghost" className="text-indigo-300 hover:text-white hover:bg-white/10">
+                    Mongo Login
+                  </Button>
+                </Link>
                 <Link href="/login">
                   <Button variant="ghost" className="text-white hover:text-white hover:bg-white/10">
                     Login
@@ -116,6 +121,11 @@ export default function Navbar() {
                   </Link>
                 ) : (
                   <>
+                    <Link href="/mongo-login" className="block">
+                      <Button variant="ghost" className="w-full text-indigo-300 border-white/20">
+                        Mongo Login
+                      </Button>
+                    </Link>
                     <Link href="/login" className="block">
                       <Button variant="outline" className="w-full text-white border-white/20">
                         Login

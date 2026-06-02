@@ -75,6 +75,9 @@ model User {
   refreshToken  String?
   resetToken    String?
   resetTokenExpiry DateTime?
+  loginAttempts Int       @default(0)
+  lockUntil     DateTime?
+  lastLogin     DateTime?
   
   hotelId       String?
   hotel         Hotel?    @relation(fields: [hotelId], references: [id])

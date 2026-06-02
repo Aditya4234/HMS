@@ -7,12 +7,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { authAPI } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+import { googleAuthAPI } from '@/lib/api';
+
+const GoogleLoginButton = dynamic(
+  () => import('@/components/GoogleLoginButton'),
+  { ssr: false }
+);
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -22,10 +30,14 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showVerificationBanner, setShowVerificationBanner] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
 
   const {
@@ -43,11 +55,45 @@ export default function LoginPage() {
       const { user, accessToken } = response.data.data;
       login(user, accessToken);
       toast.success('Welcome back!');
-      router.push('/dashboard');
+      const redirect = searchParams.get('redirect') || '/dashboard';
+      router.push(redirect);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      const message = error.response?.data?.message || 'Login failed';
+
+      if (message.toLowerCase().includes('verify') || message.toLowerCase().includes('verification')) {
+        setShowVerificationBanner(true);
+        setPendingEmail(data.email);
+      }
+
+      toast.error(message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credential: string) => {
+    setGoogleLoading(true);
+    try {
+      const response = await googleAuthAPI.login(credential);
+      const { user, accessToken } = response.data.data;
+      login(user, accessToken);
+      toast.success('Welcome back!');
+      const redirect = searchParams.get('redirect') || '/dashboard';
+      router.push(redirect);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Google login failed');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!pendingEmail) return;
+    try {
+      await authAPI.resendVerification({ email: pendingEmail });
+      toast.success('Verification email sent');
+    } catch {
+      toast.error('Failed to resend verification');
     }
   };
 
@@ -125,6 +171,42 @@ export default function LoginPage() {
           </div>
 
           <div className="glass rounded-2xl p-8 border border-white/10">
+            {showVerificationBanner && (
+              <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-amber-300 font-medium">Email not verified</p>
+                  <p className="text-xs text-amber-400/80 mt-1">Please verify your email before logging in.</p>
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    className="text-xs text-amber-300 underline mt-1 hover:text-amber-200"
+                  >
+                    Resend verification email
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Google Sign-In */}
+            <div className="mb-6">
+              <GoogleLoginButton
+                onSuccess={handleGoogleSuccess}
+                onError={(err) => toast.error(err)}
+                isLoading={googleLoading}
+              />
+            </div>
+
+            {/* Divider */}
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-[#0b1120] px-4 text-gray-500">or sign in with email</span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
@@ -210,5 +292,17 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0b1120] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

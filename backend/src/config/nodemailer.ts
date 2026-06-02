@@ -80,4 +80,39 @@ export const sendOTPEmail = async (email: string, otp: string): Promise<void> =>
   });
 };
 
+export const sendEmailVerificationEmail = async (email: string, name: string, otp: string): Promise<void> => {
+  await sendEmail({
+    to: email,
+    subject: 'Verify Your Email Address',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+        <h1 style="color: #4f46e5;">Welcome to HotelManager!</h1>
+        <p>Hi ${name},</p>
+        <p>Thanks for creating an account. Please verify your email address using the code below:</p>
+        <div style="text-align: center; margin: 24px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4f46e5;">${otp}</span>
+        </div>
+        <p style="color: #64748b; font-size: 14px;">This code expires in 24 hours.</p>
+        <p style="color: #64748b; font-size: 14px;">If you didn't create this account, you can ignore this email.</p>
+      </div>
+    `,
+  });
+};
+
+export const sendAccountLockedEmail = async (email: string, name: string, minutes: number): Promise<void> => {
+  await sendEmail({
+    to: email,
+    subject: 'Account Locked - Security Alert',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+        <h1 style="color: #ef4444;">Account Locked</h1>
+        <p>Hi ${name},</p>
+        <p>Your account has been temporarily locked due to multiple failed login attempts.</p>
+        <p>Your account will be unlocked in <strong>${minutes} minutes</strong>.</p>
+        <p style="color: #64748b; font-size: 14px;">If this wasn't you, please contact support immediately.</p>
+      </div>
+    `,
+  });
+};
+
 export default transporter;

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import prisma from '../config/database';
 import stripe from '../config/stripe';
 import { AppError } from '../middlewares/errorHandler';
@@ -74,15 +75,27 @@ export const stripeWebhook = async (req: Request, res: Response, next: NextFunct
 
 export const razorpayWebhook = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+    if (webhookSecret) {
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+      const actualSignature = req.headers['x-razorpay-signature'] as string;
+      if (expectedSignature !== actualSignature) {
+        throw new AppError('Invalid webhook signature', 400);
+      }
+    }
+
     const event = req.body.event;
     if (event === 'payment.captured') {
       const payload = req.body.payload;
       const paymentId = payload.payment?.entity?.id;
-      const orderId = payload.order?.entity?.receipt;
+      const receipt = payload.order?.entity?.receipt;
 
-      if (orderId) {
+      if (receipt) {
         await prisma.payment.updateMany({
-          where: { transactionId: orderId },
+          where: { transactionId: receipt },
           data: { status: 'COMPLETED', transactionId: paymentId },
         });
       }
