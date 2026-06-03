@@ -107,6 +107,11 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/random-users', randomUserRoutes);
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'Hotel Management API', docs: '/api-docs', api: '/api' });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Hotel Management API is running', timestamp: new Date().toISOString() });
