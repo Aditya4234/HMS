@@ -18,7 +18,7 @@ const plans = [
     name: 'Professional',
     price: '$79',
     description: 'Ideal for growing hotel businesses',
-    features: ['Up to 100 Rooms', 'Advanced Analytics', 'Priority Support', 'Payment Integration', 'Staff Accounts (20)', 'API Access', 'Custom Reports'],
+    features: ['Up to 100 Rooms', 'Advanced Analytics', 'Priority Support', 'Staff Accounts (20)', 'API Access', 'Custom Reports'],
     popular: true,
     gradient: 'from-indigo-500 to-purple-500',
   },

@@ -99,14 +99,6 @@ export const bookingAPI = {
   getStats: () => api.get('/bookings/stats'),
 };
 
-export const paymentAPI = {
-  getAll: (params?: any) => api.get('/payments', { params }),
-  create: (data: any) => api.post('/payments', data),
-  confirm: (data: any) => api.post('/payments/confirm', data),
-  refund: (id: string, data: any) => api.post(`/payments/${id}/refund`, data),
-  getStats: () => api.get('/payments/stats'),
-};
-
 export const customerAPI = {
   getAll: (params?: any) => api.get('/customers', { params }),
   getById: (id: string) => api.get(`/customers/${id}`),

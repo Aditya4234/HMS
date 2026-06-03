@@ -10,10 +10,6 @@ const faqs = [
     answer: 'Our booking system provides real-time room availability, automated conflict detection, and instant confirmation. Guests can book through your website or you can manually create bookings from the dashboard.',
   },
   {
-    question: 'Can I integrate with my existing payment provider?',
-    answer: 'Yes! We support Stripe, Razorpay, and PayPal out of the box. You can also process cash payments at the property. All payment data is encrypted and PCI-compliant.',
-  },
-  {
     question: 'Is there a mobile app available?',
     answer: 'Yes, our platform is fully responsive and works seamlessly on all devices. We also offer dedicated mobile apps for iOS and Android for both staff and guests.',
   },

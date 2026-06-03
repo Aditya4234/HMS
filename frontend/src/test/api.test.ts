@@ -1,4 +1,4 @@
-import api, { authAPI, roomAPI, bookingAPI, paymentAPI, customerAPI } from "@/lib/api";
+import api, { authAPI, roomAPI, bookingAPI, customerAPI } from "@/lib/api";
 
 // Mock axios
 jest.mock("axios", () => {
@@ -96,17 +96,6 @@ describe("API Client", () => {
         roomId: "room-1",
         checkIn: "2026-06-01",
         checkOut: "2026-06-05",
-      });
-    });
-  });
-
-  describe("paymentAPI", () => {
-    it("create sends correct request", () => {
-      const spy = jest.spyOn(api, "post");
-      paymentAPI.create({ bookingId: "booking-1", method: "CASH" });
-      expect(spy).toHaveBeenCalledWith("/payments", {
-        bookingId: "booking-1",
-        method: "CASH",
       });
     });
   });

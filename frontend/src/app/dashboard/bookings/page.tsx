@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { bookingAPI, roomAPI, paymentAPI } from '@/lib/api';
+import { bookingAPI, roomAPI } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { CalendarCheck, X, Search } from 'lucide-react';
@@ -58,18 +58,6 @@ export default function BookingsPage() {
       setShowModal(false);
       fetchBookings();
     } catch { toast.error('Failed to create booking'); }
-  };
-
-  const recordCashPayment = async (bookingId: string) => {
-    try {
-      const res = await paymentAPI.create({ bookingId, method: 'CASH' });
-      const payment = res.data.data.payment;
-      await paymentAPI.confirm({ paymentId: payment.id });
-      toast.success('Cash payment recorded');
-      fetchBookings();
-    } catch {
-      toast.error('Failed to record payment');
-    }
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -137,10 +125,6 @@ export default function BookingsPage() {
                   <p className="text-xs text-gray-500">{booking.payments?.length || 0} payment(s)</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {isStaff && (booking.paidAmount ?? 0) < booking.totalAmount && booking.status !== 'CANCELLED' && (
-                    <Button size="sm" variant="outline" className="text-amber-400 border-amber-500/20 hover:bg-amber-500/10 text-xs"
-                      onClick={() => recordCashPayment(booking.id)}>Record Cash Pay</Button>
-                  )}
                   {booking.status === 'CONFIRMED' && (
                     <Button size="sm" variant="outline" className="text-green-400 border-green-500/20 hover:bg-green-500/10 text-xs"
                       onClick={() => updateStatus(booking.id, 'CHECKED_IN')}>Check In</Button>

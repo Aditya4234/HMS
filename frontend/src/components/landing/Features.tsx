@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Building2, Bed, CalendarCheck, CreditCard, Users, Bell, BarChart3, Shield, Settings } from 'lucide-react';
+import { Building2, Bed, CalendarCheck, Users, Bell, BarChart3, Shield, Settings } from 'lucide-react';
 
 const features = [
   {
@@ -21,12 +21,6 @@ const features = [
     title: 'Smart Bookings',
     description: 'Automated booking engine with real-time availability, conflict detection, and instant confirmation.',
     gradient: 'from-emerald-500 to-teal-500',
-  },
-  {
-    icon: CreditCard,
-    title: 'Payment Processing',
-    description: 'Integrated payment gateway supporting Stripe, Razorpay, and PayPal with automatic invoicing.',
-    gradient: 'from-orange-500 to-red-500',
   },
   {
     icon: Users,
