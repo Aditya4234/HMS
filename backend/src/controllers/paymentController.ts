@@ -4,7 +4,7 @@ import { ApiResponse } from '../utils/apiResponse';
 import { AuthRequest } from '../middlewares/auth';
 import { AppError } from '../middlewares/errorHandler';
 import { createPaymentIntent } from '../config/stripe';
-import { createRazorpayOrder, getRazorpay } from '../config/razorpay';
+import getRazorpay, { createRazorpayOrder } from '../config/razorpay';
 import { createPayPalOrder } from '../config/paypal';
 import { generateInvoiceNumber } from '../utils/helpers';
 import { assertPaymentAccess } from '../utils/authorization';
