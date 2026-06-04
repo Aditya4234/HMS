@@ -1,7 +1,6 @@
 .PHONY: help dev-backend dev-frontend dev build-backend build-frontend build \
         test-backend test-frontend test lint-backend lint-frontend lint \
         db-push db-migrate db-seed db-studio \
-        docker-up docker-down docker-build \
         clean install setup
 
 help:
@@ -28,11 +27,6 @@ help:
 	@echo "  make db-migrate     Create a new migration"
 	@echo "  make db-seed        Seed the database"
 	@echo "  make db-studio      Open Prisma Studio"
-	@echo ""
-	@echo "Docker:"
-	@echo "  make docker-up      Start all services with Docker Compose"
-	@echo "  make docker-down    Stop all Docker services"
-	@echo "  make docker-build   Build Docker images"
 	@echo ""
 	@echo "Utility:"
 	@echo "  make clean          Remove node_modules and build artifacts"
@@ -87,15 +81,6 @@ db-seed:
 
 db-studio:
 	@cd backend && npx prisma studio
-
-docker-up:
-	@docker compose up -d
-
-docker-down:
-	@docker compose down
-
-docker-build:
-	@docker compose build
 
 clean:
 	@rm -rf backend/node_modules backend/dist backend/logs

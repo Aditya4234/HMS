@@ -24,6 +24,7 @@ import {
   FileText,
   Loader2,
   UserCircle,
+  Globe,
 } from 'lucide-react';
 import { authAPI, notificationAPI } from '@/lib/api';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
@@ -31,6 +32,7 @@ import { toast } from 'sonner';
 
 const allSidebarLinks = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
+  { name: 'Hotels', href: '/dashboard/hotels', icon: Globe, roles: ['SUPER_ADMIN'] },
   { name: 'Rooms', href: '/dashboard/rooms', icon: Bed, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST'] },
   { name: 'Bookings', href: '/dashboard/bookings', icon: CalendarCheck, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST', 'CUSTOMER'] },
   { name: 'Customers', href: '/dashboard/customers', icon: Users, roles: ['SUPER_ADMIN', 'HOTEL_ADMIN', 'RECEPTIONIST'] },

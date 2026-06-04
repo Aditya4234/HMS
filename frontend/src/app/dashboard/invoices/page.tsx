@@ -3,25 +3,68 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { invoiceAPI } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { FileText, Search, Download } from 'lucide-react';
+import { FileText, Search, Download, Loader2 } from 'lucide-react';
+import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
+
+const PAGE_SIZE = 10;
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  useEffect(() => { fetchInvoices(); }, []);
+  useEffect(() => { fetchInvoices(); }, [page]);
 
   const fetchInvoices = async () => {
     try {
-      const res = await invoiceAPI.getAll();
+      const res = await invoiceAPI.getAll({ page, limit: PAGE_SIZE });
       setInvoices(res.data.data);
+      if (res.data.pagination) {
+        setTotalPages(res.data.pagination.totalPages);
+      }
     } catch { toast.error('Failed to load invoices');
     } finally { setLoading(false); }
+  };
+
+  const handleDownload = async (inv: any) => {
+    if (inv.pdfUrl) {
+      window.open(inv.pdfUrl, '_blank');
+      return;
+    }
+    setDownloadingId(inv.id);
+    try {
+      const res = await invoiceAPI.getById(inv.id);
+      const data = res.data.data;
+      const blob = new Blob([JSON.stringify({
+        invoiceNumber: data.invoiceNumber,
+        amount: data.amount,
+        taxAmount: data.taxAmount,
+        totalAmount: data.totalAmount,
+        status: data.status,
+        bookingRef: data.booking?.bookingReference,
+        customerName: data.booking?.user?.fullName,
+        date: data.createdAt,
+      }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data.invoiceNumber}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Invoice downloaded');
+    } catch {
+      toast.error('Failed to download invoice');
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const filtered = invoices.filter((inv) =>
@@ -73,12 +116,19 @@ export default function InvoicesPage() {
                 <div className="text-right">
                   <p className="text-lg font-bold text-white">{formatCurrency(inv.totalAmount)}</p>
                 </div>
-                <button aria-label="Download invoice" onClick={() => {
-                  if (inv.pdfUrl) window.open(inv.pdfUrl, '_blank');
-                  else toast.error('No PDF available');
-                }} className="p-2 rounded-lg hover:bg-white/[0.05] text-gray-400 hover:text-white transition-all">
-                  <Download className="w-4 h-4" />
-                </button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={downloadingId === inv.id}
+                  className="text-gray-400 border-white/10"
+                  onClick={() => handleDownload(inv)}
+                >
+                  {downloadingId === inv.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                </Button>
               </div>
             </div>
           </motion.div>
@@ -89,6 +139,7 @@ export default function InvoicesPage() {
             <p className="text-gray-400">No invoices found</p>
           </div>
         )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
     </div>
   );

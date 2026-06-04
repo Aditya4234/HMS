@@ -60,6 +60,14 @@ enum ShiftType {
   NIGHT
 }
 
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
@@ -244,9 +252,12 @@ model Review {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   
+  hotel    Hotel?  @relation(fields: [hotelId], references: [id])
   hotelId   String?
+
+  room     Room?   @relation(fields: [roomId], references: [id])
   roomId    String?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -287,23 +298,24 @@ model ActivityLog {
 }
 
 model Invoice {
-  id            String   @id @default(uuid())
-  invoiceNumber String   @unique
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
   amount        Float
-  taxAmount     Float    @default(0)
+  taxAmount     Float         @default(0)
   totalAmount   Float
-  status        String   @default("PENDING")
+  status        InvoiceStatus @default(PENDING)
   dueDate       DateTime
   paidAt        DateTime?
   notes         String?
   pdfUrl        String?
   
   bookingId     String
-  booking       Booking  @relation(fields: [bookingId], references: [id])
+  booking       Booking       @relation(fields: [bookingId], references: [id])
   paymentId     String?
+  payment       Payment?      @relation(fields: [paymentId], references: [id])
   
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@map("invoices")
 }

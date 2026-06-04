@@ -4,6 +4,7 @@ services:
     env: node
     region: oregon
     plan: free
+    rootDir: backend
     buildCommand: npm install && npx prisma generate && npm run build
     startCommand: node dist/index.js
     healthCheckPath: /api/health
@@ -25,7 +26,7 @@ services:
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
       - key: FRONTEND_URL
-        value: https://your-vercel-app.vercel.app
+        value: https://your-vercel-app.vercel.app # Update this after Vercel deployment
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT

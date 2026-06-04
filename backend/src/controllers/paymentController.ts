@@ -9,6 +9,7 @@ import { createPayPalOrder } from '../config/paypal';
 import { generateInvoiceNumber } from '../utils/helpers';
 import { assertPaymentAccess } from '../utils/authorization';
 import { createNotification } from './notificationController';
+import { parsePagination } from '../utils/helpers';
 
 export const createPayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -122,7 +123,7 @@ export const confirmPayment = async (req: AuthRequest, res: Response, next: Next
       `Payment of ${payment.amount} ${payment.currency} confirmed for your booking.`,
       'PAYMENT',
       `/dashboard/payments`
-    ).catch(() => {});
+    ).catch((err) => console.error('Payment notification failed:', err));
 
     return ApiResponse.success(res, { payment, invoice }, 'Payment confirmed');
   } catch (error) {
@@ -132,9 +133,7 @@ export const confirmPayment = async (req: AuthRequest, res: Response, next: Next
 
 export const getPayments = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(req.query);
 
     const where: any = {};
 

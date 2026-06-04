@@ -117,6 +117,7 @@ import {
   createRoom,
   getRooms,
   getRoomById,
+  getPublicRoom,
   updateRoom,
   deleteRoom,
   updateRoomStatus,
@@ -128,6 +129,7 @@ const router = Router();
 
 router.get('/search', searchRooms);
 router.get('/available', getAvailableRooms);
+router.get('/public/:id', getPublicRoom);
 router.use(authenticate);
 router.get('/', getRooms);
 router.get('/:id', getRoomById);

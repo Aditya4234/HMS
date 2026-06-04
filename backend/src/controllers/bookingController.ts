@@ -94,7 +94,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       `Your booking ${booking.bookingReference} for room ${room.roomNumber} has been created.`,
       'BOOKING',
       `/dashboard/bookings`
-    ).catch(() => {});
+    ).catch((err) => console.error('Notification failed:', err));
 
     const hotelAdmins = await prisma.user.findMany({
       where: { hotelId: room.hotelId, role: { in: ['HOTEL_ADMIN', 'RECEPTIONIST'] } },
@@ -107,7 +107,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
         `New booking ${booking.bookingReference} for room ${room.roomNumber}.`,
         'BOOKING',
         `/dashboard/bookings`
-      ).catch(() => {});
+      ).catch((err) => console.error('Notification to admin failed:', err));
     }
 
     return ApiResponse.success(res, booking, 'Booking created successfully', 201);
@@ -222,7 +222,7 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response, next:
       `Your booking status is now ${status}.`,
       'BOOKING',
       `/dashboard/bookings`
-    ).catch(() => {});
+    ).catch((err) => console.error('Notification failed:', err));
 
     const io = req.app.get('io');
     if (io && bookingWithRoom.room.hotelId) {
@@ -291,7 +291,7 @@ export const getBookingStats = async (req: AuthRequest, res: Response, next: Nex
         where: {
           ...where,
           checkIn: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-          checkOut: { lte: new Date(new Date().setHours(23, 59, 59, 999)) },
+          status: { in: ['CONFIRMED', 'CHECKED_IN'] },
           deletedAt: null,
         },
       }),

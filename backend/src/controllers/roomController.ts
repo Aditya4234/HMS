@@ -9,7 +9,7 @@ import { parsePagination } from '../utils/helpers';
 export const createRoom = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const hotelId = req.user?.hotelId || req.body.hotelId;
-    if (!hotelId) return ApiResponse.success(res, null, 'No hotel associated with your account');
+    if (!hotelId) throw new AppError('No hotel associated with your account', 400);
 
     const { roomNumber, roomType, floor, description, pricePerNight, capacity, size, beds, amenities, status } = req.body;
 
@@ -101,12 +101,40 @@ export const getRoomById = async (req: AuthRequest, res: Response, next: NextFun
     const room = await prisma.room.findFirst({
       where: { id, hotelId, deletedAt: null },
       include: {
+        hotel: { select: { name: true, city: true, country: true } },
         bookings: {
           where: { deletedAt: null },
           orderBy: { createdAt: 'desc' },
           take: 10,
           include: {
             user: { select: { id: true, fullName: true, email: true } },
+          },
+        },
+      },
+    });
+
+    if (!room) throw new AppError('Room not found', 404);
+
+    return ApiResponse.success(res, room);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPublicRoom = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const room = await prisma.room.findFirst({
+      where: { id, deletedAt: null, status: 'AVAILABLE' },
+      include: {
+        hotel: { select: { name: true, city: true, country: true } },
+        bookings: {
+          where: { deletedAt: null, status: { in: ['CONFIRMED', 'CHECKED_IN'] } },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          include: {
+            user: { select: { fullName: true } },
           },
         },
       },
@@ -180,11 +208,20 @@ export const updateRoomStatus = async (req: AuthRequest, res: Response, next: Ne
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const hotelId = req.user?.hotelId;
+
+    const existing = await prisma.room.findFirst({ where: { id, hotelId } });
+    if (!existing) throw new AppError('Room not found or access denied', 404);
 
     const room = await prisma.room.update({
       where: { id },
       data: { status },
     });
+
+    const io = req.app.get('io');
+    if (io && hotelId) {
+      io.to(`hotel-${hotelId}`).emit('room-status-changed', { roomId: id, status });
+    }
 
     return ApiResponse.success(res, room, 'Room status updated');
   } catch (error) {

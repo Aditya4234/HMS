@@ -51,7 +51,15 @@ export const getDashboardStats = async (req: AuthRequest, res: Response, next: N
       prisma.booking.count({
         where: { ...bookingWhere, status: { in: ['CONFIRMED', 'CHECKED_IN'] } },
       }),
-      prisma.user.count({ where: { role: 'CUSTOMER', deletedAt: null } }),
+      hotelId
+        ? prisma.user.count({
+            where: {
+              role: 'CUSTOMER',
+              deletedAt: null,
+              bookings: { some: { room: { hotelId } } },
+            },
+          })
+        : prisma.user.count({ where: { role: 'CUSTOMER', deletedAt: null } }),
       hotelId ? prisma.staff.count({ where: { hotelId, deletedAt: null } }) : Promise.resolve(0),
       prisma.payment.aggregate({
         where: {

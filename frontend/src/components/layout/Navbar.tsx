@@ -8,10 +8,10 @@ import Link from 'next/link';
 import { Menu, X, ChevronDown } from 'lucide-react';
 
 const navLinks = [
+  { name: 'Rooms', href: '/rooms' },
   { name: 'Features', href: '#features' },
   { name: 'Pricing', href: '#pricing' },
   { name: 'FAQ', href: '#faq' },
-  { name: 'Contact', href: '#contact' },
 ];
 
 export default function Navbar() {

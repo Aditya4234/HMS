@@ -15,6 +15,12 @@ export const getCustomers = async (req: AuthRequest, res: Response, next: NextFu
       deletedAt: null,
     };
 
+    if (req.user?.hotelId) {
+      where.bookings = { some: { room: { hotelId: req.user.hotelId } } };
+    } else if (req.query.hotelId) {
+      where.bookings = { some: { room: { hotelId: req.query.hotelId as string } } };
+    }
+
     if (search) {
       where.OR = [
         { fullName: { contains: search as string, mode: 'insensitive' } },

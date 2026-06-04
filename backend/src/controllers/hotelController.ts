@@ -38,7 +38,7 @@ export const getHotelById = async (req: Request, res: Response, next: NextFuncti
 export const updateHotel = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const hotelId = req.user?.hotelId || req.body.hotelId;
-    if (!hotelId) return ApiResponse.success(res, null, 'No hotel associated with your account');
+    if (!hotelId) throw new AppError('No hotel associated with your account', 400);
 
     const hotel = await prisma.hotel.update({
       where: { id: hotelId },
@@ -53,7 +53,7 @@ export const updateHotel = async (req: AuthRequest, res: Response, next: NextFun
 export const getHotelSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const hotelId = req.user?.hotelId;
-    if (!hotelId) return ApiResponse.success(res, null, 'No hotel associated with your account');
+    if (!hotelId) throw new AppError('No hotel associated with your account', 400);
 
     const hotel = await prisma.hotel.findUnique({
       where: { id: hotelId },

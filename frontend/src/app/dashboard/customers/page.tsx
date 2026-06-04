@@ -2,28 +2,35 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { customerAPI } from '@/lib/api';
 import { getInitials, formatDate } from '@/lib/utils';
 import { Users, Search, Mail, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
+
+const PAGE_SIZE = 10;
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [page]);
 
   const fetchCustomers = async () => {
     try {
-      const res = await customerAPI.getAll();
+      const res = await customerAPI.getAll({ page, limit: PAGE_SIZE });
       setCustomers(res.data.data);
+      if (res.data.pagination) {
+        setTotalPages(res.data.pagination.totalPages);
+      }
     } catch { toast.error('Failed to load customers'); } finally { setLoading(false); }
   };
 
@@ -90,6 +97,7 @@ export default function CustomersPage() {
             <p className="text-gray-400">No customers found</p>
           </div>
         )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
     </div>
   );

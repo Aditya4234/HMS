@@ -2,25 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { reviewAPI } from '@/lib/api';
 import { getInitials } from '@/lib/utils';
 import { Star, Trash2, MessageSquare } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
+
+const PAGE_SIZE = 10;
 
 export default function ReviewsPage() {
   const { user } = useAuthStore();
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => { fetchReviews(); }, []);
+  useEffect(() => { fetchReviews(); }, [page]);
 
   const fetchReviews = async () => {
     try {
-      const res = await reviewAPI.getAll();
+      const res = await reviewAPI.getAll({ page, limit: PAGE_SIZE });
       setReviews(res.data.data);
+      if (res.data.pagination) {
+        setTotalPages(res.data.pagination.totalPages);
+      }
     } catch { toast.error('Failed to load reviews');
     } finally { setLoading(false); }
   };
@@ -85,6 +91,7 @@ export default function ReviewsPage() {
             <p className="text-gray-400">No reviews yet</p>
           </div>
         )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
     </div>
   );

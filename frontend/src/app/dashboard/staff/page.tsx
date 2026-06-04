@@ -7,24 +7,32 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { staffAPI } from '@/lib/api';
 import { Building2, Plus, Search, X } from 'lucide-react';
+import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
+
+const PAGE_SIZE = 10;
 
 export default function StaffPage() {
   const [staff, setStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [form, setForm] = useState({
     fullName: '', email: '', phoneNumber: '', position: '', department: '',
     salary: '', gender: 'MALE', address: '', shift: 'MORNING',
   });
 
-  useEffect(() => { fetchStaff(); }, []);
+  useEffect(() => { fetchStaff(); }, [page]);
 
   const fetchStaff = async () => {
     try {
-      const res = await staffAPI.getAll();
+      const res = await staffAPI.getAll({ page, limit: PAGE_SIZE });
       setStaff(res.data.data);
+      if (res.data.pagination) {
+        setTotalPages(res.data.pagination.totalPages);
+      }
     } catch { toast.error('Failed to load staff');
     } finally { setLoading(false); }
   };
@@ -42,6 +50,15 @@ export default function StaffPage() {
       setShowModal(false);
       fetchStaff();
     } catch { toast.error('Failed to create staff member'); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this staff member?')) return;
+    try {
+      await staffAPI.delete(id);
+      toast.success('Staff member deleted');
+      fetchStaff();
+    } catch { toast.error('Failed to delete staff member'); }
   };
 
   const filtered = staff.filter((m) =>
@@ -92,9 +109,15 @@ export default function StaffPage() {
                   <p className="text-xs text-gray-500">ID: {member.employeeId}</p>
                 </div>
               </div>
-              <div className="text-right text-sm text-gray-400">
-                <p>{member.email}</p>
-                {member.salary && <p>${member.salary.toLocaleString()}/yr</p>}
+              <div className="flex items-center space-x-4">
+                <div className="text-right text-sm text-gray-400">
+                  <p>{member.email}</p>
+                  {member.salary && <p>${member.salary.toLocaleString()}/yr</p>}
+                </div>
+                <button aria-label="Delete staff" onClick={() => handleDelete(member.id)}
+                  className="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </motion.div>
@@ -105,6 +128,7 @@ export default function StaffPage() {
             <p className="text-gray-400">No staff members found</p>
           </div>
         )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       <AnimatePresence>

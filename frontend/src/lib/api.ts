@@ -79,9 +79,15 @@ export const authAPI = {
   getCsrfToken: () => api.get('/csrf-token'),
 };
 
+const publicApi = axios.create({
+  baseURL: API_URL,
+  headers: { 'Content-Type': 'application/json' },
+});
+
 export const roomAPI = {
   getAll: (params?: any) => api.get('/rooms', { params }),
   getById: (id: string) => api.get(`/rooms/${id}`),
+  getPublic: (id: string) => publicApi.get(`/rooms/public/${id}`),
   create: (data: any) => api.post('/rooms', data),
   update: (id: string, data: any) => api.put(`/rooms/${id}`, data),
   delete: (id: string) => api.delete(`/rooms/${id}`),
