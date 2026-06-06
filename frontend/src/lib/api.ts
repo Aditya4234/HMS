@@ -157,4 +157,5 @@ export const googleAuthAPI = {
 export const invoiceAPI = {
   getAll: (params?: any) => api.get('/invoices', { params }),
   getById: (id: string) => api.get(`/invoices/${id}`),
+  create: (data: any) => api.post('/invoices', data),
 };

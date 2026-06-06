@@ -47,19 +47,14 @@ const allSidebarLinks = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAuthenticated, logout, setUser } = useAuthStore();
+  const { user, isAuthenticated, isHydrated, logout, setUser } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
 
   const sidebarLinks = allSidebarLinks.filter(
     (link) => !user?.role || link.roles.includes(user.role)
   );
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
 
   useEffect(() => {
     if (!isHydrated || !isAuthenticated) return;

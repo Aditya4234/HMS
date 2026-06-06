@@ -53,7 +53,8 @@ export default function BookingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await bookingAPI.create({ ...form, guests: parseInt(form.guests) });
+      const guestsNum = parseInt(form.guests);
+      await bookingAPI.create({ ...form, ...(isNaN(guestsNum) ? {} : { guests: guestsNum }) });
       toast.success('Booking created');
       setShowModal(false);
       fetchBookings();

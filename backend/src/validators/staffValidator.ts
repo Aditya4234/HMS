@@ -7,7 +7,7 @@ export const createStaffSchema = z.object({
     phoneNumber: z.string().optional(),
     position: z.string().min(1, 'Position is required'),
     department: z.string().min(1, 'Department is required'),
-    salary: z.string().optional(),
+    salary: z.union([z.string(), z.number()]).optional(),
     gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
     address: z.string().optional(),
     shift: z.enum(['MORNING', 'AFTERNOON', 'NIGHT']).optional(),

@@ -30,12 +30,15 @@
  *         description: Invoice details
  */
 import { Router } from 'express';
-import { authenticate } from '../middlewares/auth';
-import { getInvoices, getInvoiceById } from '../controllers/invoiceController';
+import { authenticate, authorize } from '../middlewares/auth';
+import { validate } from '../middlewares/validate';
+import { createInvoiceSchema } from '../validators/invoiceValidator';
+import { createInvoice, getInvoices, getInvoiceById } from '../controllers/invoiceController';
 
 const router = Router();
 
 router.use(authenticate);
+router.post('/', authorize('SUPER_ADMIN', 'HOTEL_ADMIN'), validate(createInvoiceSchema), createInvoice);
 router.get('/', getInvoices);
 router.get('/:id', getInvoiceById);
 
