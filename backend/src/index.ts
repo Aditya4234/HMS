@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
@@ -7,6 +6,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import https from 'https';
 dotenv.config();
 
 import { validateEnv } from './config/env';
@@ -49,10 +49,6 @@ const io = new Server(httpServer, {
 // Initialize socket handlers
 initializeSocket(io);
 
-const corsOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',')
-  : ['http://localhost:3000', 'http://localhost:3001'];
-
 // Webhooks - must be before JSON middleware (raw body needed)
 app.use('/api/webhooks', webhookRoutes);
 
@@ -62,10 +58,34 @@ app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
 }));
 app.use(compression());
-app.use(cors({
-  origin: corsOrigins,
-  credentials: true,
-}));
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : []),
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://hms-eight-phi.vercel.app',
+  ];
+
+  const isAllowed = !origin
+    || process.env.NODE_ENV !== 'production'
+    || allowedOrigins.some(o => origin.startsWith(o.replace(/\/$/, '')))
+    || origin.endsWith('.vercel.app');
+
+  if (isAllowed && origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (isAllowed) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-CSRF-Token');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -134,6 +154,20 @@ const startServer = async () => {
     console.log('📡 API: http://localhost:' + PORT + '/api');
     console.log('📖 API Docs: http://localhost:' + PORT + '/api-docs');
     console.log('🔌 WebSocket: ws://localhost:' + PORT);
+
+    // Keep Render free tier alive by self-pinging every 10 minutes
+    const selfUrl = process.env.RENDER_EXTERNAL_URL || process.env.SELF_URL;
+    if (selfUrl) {
+      const pingUrl = selfUrl.replace(/\/$/, '') + '/api/health';
+      console.log('⏰ Self-ping keep-alive enabled for: ' + pingUrl);
+      setInterval(() => {
+        https.get(pingUrl, (res) => {
+          console.log('⏰ Self-ping status: ' + res.statusCode);
+        }).on('error', (err) => {
+          console.error('⏰ Self-ping failed:', err.message);
+        });
+      }, 10 * 60 * 1000);
+    }
 
     if (process.env.NODE_ENV === 'production') {
       console.log('\n🏁 Production Checklist:');
