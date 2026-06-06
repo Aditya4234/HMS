@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { staffAPI } from '@/lib/api';
+import { staffAPI, hotelAPI } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 import { Building2, Plus, Search, X } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
@@ -13,15 +14,17 @@ import { toast } from 'sonner';
 const PAGE_SIZE = 10;
 
 export default function StaffPage() {
+  const { user } = useAuthStore();
   const [staff, setStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [hotels, setHotels] = useState<any[]>([]);
   const [form, setForm] = useState({
     fullName: '', email: '', phoneNumber: '', position: '', department: '',
-    salary: '', gender: 'MALE', address: '', shift: 'MORNING',
+    salary: '', gender: 'MALE', address: '', shift: 'MORNING', hotelId: '',
   });
 
   useEffect(() => { fetchStaff(); }, [page]);
@@ -37,15 +40,25 @@ export default function StaffPage() {
     } finally { setLoading(false); }
   };
 
-  const openCreate = () => {
-    setForm({ fullName: '', email: '', phoneNumber: '', position: '', department: '', salary: '', gender: 'MALE', address: '', shift: 'MORNING' });
+  const openCreate = async () => {
+    if (!user?.hotelId) {
+      try {
+        const res = await hotelAPI.getAll();
+        setHotels(res.data.data || []);
+      } catch { setHotels([]); }
+    }
+    setForm({ fullName: '', email: '', phoneNumber: '', position: '', department: '', salary: '', gender: 'MALE', address: '', shift: 'MORNING', hotelId: user?.hotelId || '' });
     setShowModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await staffAPI.create({ ...form, salary: form.salary ? parseFloat(form.salary) : undefined });
+      const payload: any = { ...form };
+      if (form.salary) payload.salary = parseFloat(form.salary);
+      else delete payload.salary;
+      if (!payload.hotelId) delete payload.hotelId;
+      await staffAPI.create(payload);
       toast.success('Staff member created');
       setShowModal(false);
       fetchStaff();
@@ -146,6 +159,18 @@ export default function StaffPage() {
                 </button>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {!user?.hotelId && (
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Hotel *</label>
+                    <select value={form.hotelId} onChange={(e) => setForm({ ...form, hotelId: e.target.value })}
+                      className="w-full rounded-xl bg-white/[0.02] border border-white/10 text-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                      <option value="" className="bg-[#0f172a]">Select hotel</option>
+                      {hotels.map((h: any) => (
+                        <option key={h.id} value={h.id} className="bg-[#0f172a]">{h.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-gray-300 mb-2">Full Name *</label>

@@ -14,7 +14,7 @@ import { connectDatabase } from './config/database';
 import { connectMongoDB } from './config/mongodb';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { apiLimiter } from './middlewares/rateLimiter';
-import { setCsrfCookie, csrfProtection, csrfTokenEndpoint } from './middlewares/csrf';
+import { setCsrfCookie, csrfTokenEndpoint } from './middlewares/csrf';
 import { initializeSocket } from './sockets';
 import { startOverdueInvoiceCron } from './cron/overdueInvoices';
 import swaggerUi from 'swagger-ui-express';
@@ -94,12 +94,6 @@ app.use(cookieParser());
 app.use(morgan('dev'));
 app.use('/api', apiLimiter);
 app.use('/api', setCsrfCookie);
-app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/webhooks') || req.path.startsWith('/auth')) {
-    return next();
-  }
-  csrfProtection(req, res, next);
-});
 
 // Swagger API docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

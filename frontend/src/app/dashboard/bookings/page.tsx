@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { bookingAPI, roomAPI } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { CalendarCheck, X, Search } from 'lucide-react';
+import { CalendarCheck, X, Search, Eye, User, Mail, Phone, Hash, DollarSign } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
 
@@ -16,11 +16,12 @@ const PAGE_SIZE = 10;
 
 export default function BookingsPage() {
   const { user } = useAuthStore();
-  const isStaff = user?.role && user.role !== 'CUSTOMER';
   const [bookings, setBookings] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -103,7 +104,8 @@ export default function BookingsPage() {
         {filtered.map((booking, i) => (
           <motion.div key={booking.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.03 }}
-            className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+            className="p-4 rounded-xl bg-white/[0.02] border border-white/5 cursor-pointer hover:bg-white/[0.05] transition-all"
+            onClick={() => { setSelectedBooking(booking); setShowDetailModal(true); }}>
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex items-start space-x-4">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
@@ -204,6 +206,106 @@ export default function BookingsPage() {
                   <Button type="submit" variant="gradient" className="flex-1">Create Booking</Button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDetailModal && selectedBooking && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowDetailModal(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-2xl bg-[#0f172a] border border-white/10 p-6 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">Booking Details</h2>
+                <button aria-label="Close" onClick={() => setShowDetailModal(false)} className="p-2 rounded-lg hover:bg-white/[0.05] text-gray-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]">
+                  <div className="flex items-center space-x-2 text-gray-400">
+                    <Hash className="w-4 h-4" />
+                    <span className="text-sm">Reference</span>
+                  </div>
+                  <span className="text-white font-semibold">{selectedBooking.bookingReference}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]">
+                  <div className="flex items-center space-x-2 text-gray-400">
+                    <User className="w-4 h-4" />
+                    <span className="text-sm">Guest</span>
+                  </div>
+                  <span className="text-white">{selectedBooking.user?.fullName || 'Unknown'}</span>
+                </div>
+
+                {selectedBooking.user?.email && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]">
+                    <div className="flex items-center space-x-2 text-gray-400">
+                      <Mail className="w-4 h-4" />
+                      <span className="text-sm">Email</span>
+                    </div>
+                    <span className="text-white">{selectedBooking.user.email}</span>
+                  </div>
+                )}
+
+                {selectedBooking.user?.phoneNumber && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]">
+                    <div className="flex items-center space-x-2 text-gray-400">
+                      <Phone className="w-4 h-4" />
+                      <span className="text-sm">Phone</span>
+                    </div>
+                    <span className="text-white">{selectedBooking.user.phoneNumber}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]">
+                  <div className="flex items-center space-x-2 text-gray-400">
+                    <Eye className="w-4 h-4" />
+                    <span className="text-sm">Status</span>
+                  </div>
+                  <Badge variant={selectedBooking.status === 'CONFIRMED' ? 'info' : selectedBooking.status === 'CHECKED_IN' ? 'success' : selectedBooking.status === 'CANCELLED' ? 'destructive' : 'warning'} className="text-[10px]">
+                    {selectedBooking.status}
+                  </Badge>
+                </div>
+
+                <div className="p-3 rounded-lg bg-white/[0.02]">
+                  <p className="text-sm text-gray-400 mb-2">Room</p>
+                  <p className="text-white">Room {selectedBooking.room?.roomNumber} - {selectedBooking.room?.roomType}</p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-white/[0.02]">
+                  <p className="text-sm text-gray-400 mb-2">Check-in / Check-out</p>
+                  <p className="text-white">{formatDate(selectedBooking.checkIn)} - {formatDate(selectedBooking.checkOut)}</p>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]">
+                  <div className="flex items-center space-x-2 text-gray-400">
+                    <User className="w-4 h-4" />
+                    <span className="text-sm">Guests</span>
+                  </div>
+                  <span className="text-white">{selectedBooking.guests}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]">
+                  <div className="flex items-center space-x-2 text-gray-400">
+                    <DollarSign className="w-4 h-4" />
+                    <span className="text-sm">Total Amount</span>
+                  </div>
+                  <span className="text-white font-bold text-lg">{formatCurrency(selectedBooking.totalAmount)}</span>
+                </div>
+
+                {selectedBooking.specialRequests && (
+                  <div className="p-3 rounded-lg bg-white/[0.02]">
+                    <p className="text-sm text-gray-400 mb-2">Special Requests</p>
+                    <p className="text-white text-sm">{selectedBooking.specialRequests}</p>
+                  </div>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}
