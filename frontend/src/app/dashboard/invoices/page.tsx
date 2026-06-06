@@ -45,9 +45,14 @@ export default function InvoicesPage() {
 
   const openCreate = async () => {
     try {
-      const res = await bookingAPI.getAll({ limit: 100 });
-      setBookings(res.data.data || []);
-    } catch { setBookings([]); }
+      const res = await bookingAPI.getAll({ page: 1, limit: 200 });
+      const bookingList = res.data.data || [];
+      setBookings(bookingList);
+      if (bookingList.length === 0) toast.info('No bookings available');
+    } catch { 
+      setBookings([]);
+      toast.error('Failed to load bookings');
+    }
     setForm({ bookingId: '', amount: '', taxAmount: '0', totalAmount: '', dueDate: '', notes: '' });
     setEditingInvoice(null);
     setShowModal(true);
@@ -112,9 +117,14 @@ export default function InvoicesPage() {
 
   const handleEdit = async (inv: any) => {
     try {
-      const res = await bookingAPI.getAll({ limit: 100 });
-      setBookings(res.data.data || []);
-    } catch { setBookings([]); }
+      const res = await bookingAPI.getAll({ page: 1, limit: 200 });
+      const bookingList = res.data.data || [];
+      setBookings(bookingList);
+      if (bookingList.length === 0) toast.info('No bookings available');
+    } catch { 
+      setBookings([]);
+      toast.error('Failed to load bookings');
+    }
     setForm({
       bookingId: inv.bookingId || inv.booking?.id || '',
       amount: inv.amount?.toString() || '',
