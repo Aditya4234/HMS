@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== 'undefined') {
           localStorage.setItem('accessToken', accessToken);
         }
-        set({ user, accessToken, isAuthenticated: true });
+        set({ user, accessToken, isAuthenticated: true, isHydrated: true });
       },
       logout: () => {
         if (typeof window !== 'undefined') {
