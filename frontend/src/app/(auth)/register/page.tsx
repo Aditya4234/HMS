@@ -66,12 +66,17 @@ export default function RegisterPage() {
         phoneNumber: data.phoneNumber || undefined,
         hotelName: data.hotelName || undefined,
       });
-      const { user, accessToken } = response.data.data;
+      const { user, accessToken, emailVerificationRequired } = response.data.data;
       login(user, accessToken);
-      toast.success('Account created! Please verify your email.');
-      setRegistered(true);
-      setRegisteredEmail(data.email);
-      router.push('/otp-verification?email=' + encodeURIComponent(data.email) + '&type=verification');
+      if (emailVerificationRequired) {
+        toast.success('Account created! Please verify your email.');
+        setRegistered(true);
+        setRegisteredEmail(data.email);
+        router.push('/otp-verification?email=' + encodeURIComponent(data.email) + '&type=verification');
+      } else {
+        toast.success('Account created successfully!');
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {
