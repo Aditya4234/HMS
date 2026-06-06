@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { hotelAPI, authAPI } from '@/lib/api';
-import { User, Lock, Building2, Save } from 'lucide-react';
+import { User, Lock, Building2, Save, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 
@@ -14,8 +14,11 @@ export default function SettingsPage() {
   const [hotel, setHotel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [profileForm, setProfileForm] = useState({ fullName: '', phoneNumber: '' });
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
   const [hotelForm, setHotelForm] = useState<any>({});
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [hotelLoading, setHotelLoading] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -32,26 +35,31 @@ export default function SettingsPage() {
   }, [user]);
 
   const updateProfile = async () => {
+    setProfileLoading(true);
     try {
       await authAPI.updateProfile(profileForm);
       setUser({ ...user!, fullName: profileForm.fullName, phoneNumber: profileForm.phoneNumber });
       toast.success('Profile updated');
-    } catch { toast.error('Failed to update profile'); }
+    } catch { toast.error('Failed to update profile'); } finally { setProfileLoading(false); }
   };
 
   const updatePassword = async () => {
+    if (passwordForm.newPassword.length < 8) { toast.error('New password must be at least 8 characters'); return; }
+    if (passwordForm.newPassword !== passwordForm.confirmNewPassword) { toast.error('Passwords do not match'); return; }
+    setPasswordLoading(true);
     try {
-      await authAPI.changePassword(passwordForm);
-      setPasswordForm({ currentPassword: '', newPassword: '' });
+      await authAPI.changePassword({ currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
       toast.success('Password updated');
-    } catch { toast.error('Failed to update password'); }
+    } catch { toast.error('Failed to update password'); } finally { setPasswordLoading(false); }
   };
 
   const updateHotelSettings = async () => {
+    setHotelLoading(true);
     try {
-      await hotelAPI.update(hotelForm);
+      await hotelAPI.update({ ...hotelForm, hotelId: hotel?.id });
       toast.success('Hotel settings updated');
-    } catch { toast.error('Failed to update hotel settings'); }
+    } catch { toast.error('Failed to update hotel settings'); } finally { setHotelLoading(false); }
   };
 
   if (loading) return <div className="space-y-4">{[1, 2, 3].map((i) => <div key={i} className="h-32 rounded-xl bg-white/[0.02] animate-pulse" />)}</div>;
@@ -88,9 +96,15 @@ export default function SettingsPage() {
                 className="bg-white/[0.02] border-white/10 text-white" />
             </div>
           </div>
-          <Button variant="gradient" className="flex items-center space-x-2" onClick={updateProfile}>
-            <Save className="w-4 h-4" /><span>Save Changes</span>
-          </Button>
+          <div className="flex space-x-2">
+            <Button variant="gradient" className="flex items-center space-x-2" onClick={updateProfile} disabled={profileLoading}>
+              {profileLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>{profileLoading ? 'Saving...' : 'Save Changes'}</span>
+            </Button>
+            <Button variant="outline" className="text-white border-white/20" onClick={() => setProfileForm({ fullName: user?.fullName || '', phoneNumber: user?.phoneNumber || '' })}>
+              Cancel
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -116,8 +130,22 @@ export default function SettingsPage() {
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                 className="bg-white/[0.02] border-white/10 text-white" />
             </div>
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Confirm New Password</label>
+              <Input type="password" value={passwordForm.confirmNewPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirmNewPassword: e.target.value })}
+                className="bg-white/[0.02] border-white/10 text-white" />
+            </div>
           </div>
-          <Button variant="outline" className="text-white border-white/20" onClick={updatePassword}>Update Password</Button>
+          <div className="flex space-x-2">
+            <Button variant="outline" className="text-white border-white/20" onClick={updatePassword} disabled={passwordLoading}>
+              {passwordLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {passwordLoading ? 'Updating...' : 'Update Password'}
+            </Button>
+            <Button variant="outline" className="text-white border-white/20" onClick={() => setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' })}>
+              Cancel
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -164,9 +192,15 @@ export default function SettingsPage() {
                   className="bg-white/[0.02] border-white/10 text-white" />
               </div>
             </div>
-            <Button variant="gradient" className="flex items-center space-x-2" onClick={updateHotelSettings}>
-              <Save className="w-4 h-4" /><span>Save Hotel Settings</span>
-            </Button>
+            <div className="flex space-x-2">
+              <Button variant="gradient" className="flex items-center space-x-2" onClick={updateHotelSettings} disabled={hotelLoading}>
+                {hotelLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span>{hotelLoading ? 'Saving...' : 'Save Hotel Settings'}</span>
+              </Button>
+              <Button variant="outline" className="text-white border-white/20" onClick={() => setHotelForm(hotel || {})}>
+                Cancel
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { RoomImage } from '@/components/ui/room-image';
 import { roomAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
-import { Plus, Search, Bed, Edit, Trash2, X, Upload } from 'lucide-react';
+import { Plus, Search, Bed, Edit, Trash2, X, Upload, Loader2 } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
@@ -30,9 +30,11 @@ export default function RoomsPage() {
     roomNumber: '', roomType: '', floor: '', description: '',
     pricePerNight: '', capacity: '2', size: '', beds: '1', status: 'AVAILABLE',
   });
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const allPreviews = [...existingImages, ...newImagePreviews];
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetchRooms(); }, [page]);
@@ -51,9 +53,9 @@ export default function RoomsPage() {
   const openCreate = () => {
     setEditRoom(null);
     setForm({ roomNumber: '', roomType: '', floor: '', description: '', pricePerNight: '', capacity: '2', size: '', beds: '1', status: 'AVAILABLE' });
-    setImageFiles([]);
-    setImagePreview([]);
     setExistingImages([]);
+    setNewImages([]);
+    setNewImagePreviews([]);
     setShowModal(true);
   };
 
@@ -65,20 +67,20 @@ export default function RoomsPage() {
       capacity: room.capacity.toString(), size: room.size?.toString() || '',
       beds: room.beds.toString(), status: room.status,
     });
-    setImageFiles([]);
     setExistingImages(room.images || []);
-    setImagePreview(room.images || []);
+    setNewImages([]);
+    setNewImagePreviews([]);
     setShowModal(true);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setImageFiles((prev) => [...prev, ...files]);
+    setNewImages((prev) => [...prev, ...files]);
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
         if (ev.target?.result) {
-          setImagePreview((prev) => [...prev, ev.target!.result as string]);
+          setNewImagePreviews((prev) => [...prev, ev.target!.result as string]);
         }
       };
       reader.readAsDataURL(file);
@@ -89,11 +91,10 @@ export default function RoomsPage() {
     const existingCount = existingImages.length;
     if (index < existingCount) {
       setExistingImages((prev) => prev.filter((_, i) => i !== index));
-      setImagePreview((prev) => prev.filter((_, i) => i !== index));
     } else {
       const fileIndex = index - existingCount;
-      setImageFiles((prev) => prev.filter((_, i) => i !== fileIndex));
-      setImagePreview((prev) => prev.filter((_, i) => i !== index));
+      setNewImages((prev) => prev.filter((_, i) => i !== fileIndex));
+      setNewImagePreviews((prev) => prev.filter((_, i) => i !== fileIndex));
     }
   };
 
@@ -104,7 +105,7 @@ export default function RoomsPage() {
       Object.entries(form).forEach(([key, value]) => {
         formData.append(key, value);
       });
-      imageFiles.forEach((file) => {
+      newImages.forEach((file) => {
         formData.append('images', file);
       });
       if (editRoom) {
@@ -125,11 +126,13 @@ export default function RoomsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this room?')) return;
+    setDeletingId(id);
     try {
       await roomAPI.delete(id);
       toast.success('Room deleted');
       fetchRooms();
-    } catch { toast.error('Failed to delete room'); }
+    } catch { toast.error('Failed to delete room');
+    } finally { setDeletingId(null); }
   };
 
   const filtered = rooms.filter((r) =>
@@ -207,7 +210,11 @@ export default function RoomsPage() {
                     </button>
                     <button aria-label="Delete room" onClick={() => handleDelete(room.id)}
                       className="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all">
-                      <Trash2 className="w-4 h-4" />
+                      {deletingId === room.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 )}
@@ -310,7 +317,7 @@ export default function RoomsPage() {
                     className="hidden"
                   />
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {imagePreview.map((url, idx) => (
+                    {allPreviews.map((url, idx) => (
                       <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-white/10">
                         <RoomImage src={url} alt={`Image ${idx + 1}`} fill className="object-cover" />
                         <button type="button" onClick={() => removeImage(idx)}

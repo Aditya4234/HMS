@@ -12,6 +12,7 @@ export interface User {
   hotel?: any;
   emailVerified?: boolean;
   lastLogin?: string;
+  createdAt?: string;
 }
 
 interface AuthState {

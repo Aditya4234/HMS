@@ -24,6 +24,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [resending, setResending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileForm, setProfileForm] = useState({
     fullName: '',
@@ -93,6 +94,18 @@ export default function ProfilePage() {
     }
   };
 
+  const handleResendVerification = async () => {
+    setResending(true);
+    try {
+      await authAPI.resendVerification({ email: user?.email });
+      toast.success('Verification email sent');
+    } catch {
+      toast.error('Failed to resend verification email');
+    } finally {
+      setResending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -101,7 +114,7 @@ export default function ProfilePage() {
     );
   }
 
-  const roleColors: Record<string, string> = {
+  const roleColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info' | 'premium'> = {
     SUPER_ADMIN: 'premium',
     HOTEL_ADMIN: 'info',
     RECEPTIONIST: 'success',
@@ -148,12 +161,12 @@ export default function ProfilePage() {
                   {user?.email}
                 </p>
               </div>
-              <Badge variant={(roleColors[user?.role || ''] || 'default') as any} className="capitalize">
+              <Badge variant={roleColors[user?.role || ''] || 'default'} className="capitalize">
                 {(user?.role || '').replace(/_/g, ' ')}
               </Badge>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03]">
                 <Mail className="w-4 h-4 text-indigo-400" />
                 <div>
@@ -172,12 +185,19 @@ export default function ProfilePage() {
                 <Calendar className="w-4 h-4 text-indigo-400" />
                 <div>
                   <p className="text-xs text-gray-500">Member Since</p>
-                  <p className="text-sm text-white">{user?.lastLogin ? formatDate(user.lastLogin) : 'New'}</p>
+                  <p className="text-sm text-white">{user?.createdAt ? formatDate(user.createdAt) : 'New'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03]">
+                <Calendar className="w-4 h-4 text-indigo-400" />
+                <div>
+                  <p className="text-xs text-gray-500">Last Login</p>
+                  <p className="text-sm text-white">{user?.lastLogin ? formatDate(user.lastLogin) : 'N/A'}</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-2 mt-4 flex-wrap">
               <Shield className="w-4 h-4 text-gray-500" />
               <span className="text-sm text-gray-500">Email verified:</span>
               {user?.emailVerified ? (
@@ -185,9 +205,21 @@ export default function ProfilePage() {
                   <CheckCircle className="w-3 h-3" /> Verified
                 </Badge>
               ) : (
-                <Badge variant="warning" className="text-xs flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" /> Not Verified
-                </Badge>
+                <>
+                  <Badge variant="warning" className="text-xs flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Not Verified
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResendVerification}
+                    disabled={resending}
+                    className="flex items-center gap-1"
+                  >
+                    {resending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
+                    <span>Resend Verification</span>
+                  </Button>
+                </>
               )}
             </div>
           </CardContent>
