@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Bed, Users } from 'lucide-react';
+import { Bed, Users, ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { roomAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
+
+const FALLBACK_IMAGE = 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=800';
 
 export default function RoomShowcase() {
   const [rooms, setRooms] = useState<any[]>([]);
@@ -50,10 +53,21 @@ export default function RoomShowcase() {
               transition={{ delay: index * 0.15 }}
               className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-indigo-500/30 transition-all duration-500"
             >
-              <div className="h-48 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center">
-                <Bed className="w-16 h-16 text-indigo-400/30" />
+              <div className="h-48 relative">
+                {room.images && room.images.length > 0 ? (
+                  <Image
+                    src={room.images[0]}
+                    alt={`Room ${room.roomNumber}`}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center">
+                    <ImageIcon className="w-12 h-12 text-indigo-400/30" />
+                  </div>
+                )}
                 <div className="absolute top-4 right-4">
-                  <span className="text-2xl font-bold text-white">
+                  <span className="text-2xl font-bold text-white drop-shadow-lg">
                     {formatCurrency(room.pricePerNight)}
                     <span className="text-sm text-white/70">/night</span>
                   </span>

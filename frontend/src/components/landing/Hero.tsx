@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Play, ArrowRight, TrendingUp, Users, CalendarCheck, DollarSign } from 'lucide-react';
 import Link from 'next/link';
+import { searchPexelsImages } from '@/lib/pexels';
 
 const floatingCards = [
   { icon: TrendingUp, label: 'Revenue', value: '$12.4k', color: 'from-green-400 to-emerald-500', trend: '+23%' },
@@ -14,6 +16,14 @@ const floatingCards = [
 ];
 
 export default function Hero() {
+  const [heroImage, setHeroImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    searchPexelsImages('luxury hotel resort lobby', 1).then((photos) => {
+      if (photos.length > 0) setHeroImage(photos[0].src.large2x);
+    });
+  }, []);
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-[#0b1120]">
       <div className="absolute inset-0">
@@ -99,51 +109,19 @@ export default function Hero() {
             transition={{ duration: 0.8, delay: 0.3 }}
             className="relative"
           >
-            <div className="relative w-full aspect-[4/3] rounded-2xl glass overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10" />
-              <div className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                    <div className="w-3 h-3 rounded-full bg-green-500" />
-                  </div>
-                  <span className="text-xs text-gray-500">Dashboard Preview</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'Total Revenue', value: '$48,290', change: '+24%', color: 'from-indigo-500 to-purple-500' },
-                    { label: 'Occupancy', value: '87%', change: '+12%', color: 'from-emerald-500 to-teal-500' },
-                    { label: 'Active Bookings', value: '156', change: '+8%', color: 'from-blue-500 to-cyan-500' },
-                    { label: 'Avg Rating', value: '4.8', change: '+0.3', color: 'from-amber-500 to-orange-500' },
-                  ].map((stat, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-white/5 border border-white/10">
-                      <p className="text-xs text-gray-500">{stat.label}</p>
-                      <p className={`text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r ${stat.color}`}>
-                        {stat.value}
-                      </p>
-                      <p className="text-xs text-green-400">{stat.change} vs last month</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="h-24 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                  <div className="w-full px-4">
-                    <div className="flex items-end justify-between h-16">
-                      {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ height: 0 }}
-                          animate={{ height: h }}
-                          transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
-                          className="w-8 bg-gradient-to-t from-indigo-500 to-purple-500 rounded-t-md"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden">
+              {heroImage ? (
+                <Image
+                  src={heroImage}
+                  alt="Luxury hotel"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0b1120]/80 via-transparent to-transparent" />
             </div>
 
             {floatingCards.map((card, index) => (

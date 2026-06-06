@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { roomAPI } from '@/lib/api';
@@ -10,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 import {
   Bed, Users, Search, MapPin, Wifi, Percent,
-  ArrowRight, SlidersHorizontal, X, Loader2
+  ArrowRight, SlidersHorizontal, X, Loader2, ImageIcon
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 
@@ -181,13 +182,24 @@ export default function PublicRoomsPage() {
                   transition={{ delay: i * 0.05 }}
                   className="group rounded-2xl overflow-hidden border border-white/10 hover:border-indigo-500/30 transition-all duration-500 bg-white/[0.02]"
                 >
-                  <div className="h-48 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center relative">
-                    <Bed className="w-16 h-16 text-indigo-400/30" />
+                  <div className="h-48 relative">
+                    {room.images && room.images.length > 0 ? (
+                      <Image
+                        src={room.images[0]}
+                        alt={`Room ${room.roomNumber}`}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center">
+                        <ImageIcon className="w-12 h-12 text-indigo-400/30" />
+                      </div>
+                    )}
                     <div className="absolute top-4 left-4">
                       <Badge variant="premium" className="text-xs">{room.roomType}</Badge>
                     </div>
                     <div className="absolute top-4 right-4">
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-bold text-white drop-shadow-lg">
                         {formatCurrency(room.pricePerNight)}
                         <span className="text-sm text-gray-400">/night</span>
                       </span>

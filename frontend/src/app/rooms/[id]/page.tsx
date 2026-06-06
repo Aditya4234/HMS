@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
   Bed, Users, MapPin, ArrowLeft, CalendarCheck,
-  Star, CheckCircle, Loader2, Shield
+  Star, CheckCircle, Loader2, Shield, ImageIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
@@ -100,8 +101,20 @@ export default function RoomDetailPage() {
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="h-64 md:h-80 rounded-2xl bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-pink-600/20 flex items-center justify-center">
-                  <Bed className="w-24 h-24 text-indigo-400/20" />
+                <div className="h-64 md:h-80 rounded-2xl relative overflow-hidden">
+                  {room.images && room.images.length > 0 ? (
+                    <Image
+                      src={room.images[0]}
+                      alt={`Room ${room.roomNumber}`}
+                      fill
+                      className="object-cover"
+                      priority
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-pink-600/20 flex items-center justify-center">
+                      <ImageIcon className="w-16 h-16 text-indigo-400/20" />
+                    </div>
+                  )}
                 </div>
               </motion.div>
 
