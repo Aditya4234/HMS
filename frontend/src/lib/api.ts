@@ -5,9 +5,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 api.interceptors.request.use(
@@ -81,7 +78,6 @@ export const authAPI = {
 
 const publicApi = axios.create({
   baseURL: API_URL,
-  headers: { 'Content-Type': 'application/json' },
 });
 
 export const roomAPI = {
@@ -138,7 +134,9 @@ export const notificationAPI = {
 export const hotelAPI = {
   getAll: () => api.get('/hotels'),
   getById: (id: string) => api.get(`/hotels/${id}`),
+  create: (data: any) => api.post('/hotels', data),
   update: (data: any) => api.put('/hotels', data),
+  delete: (id: string) => api.delete(`/hotels/${id}`),
   getSettings: () => api.get('/hotels/settings/info'),
 };
 
@@ -150,6 +148,15 @@ export const reviewAPI = {
   delete: (id: string) => api.delete(`/reviews/${id}`),
 };
 
+export const paymentAPI = {
+  getAll: (params?: any) => api.get('/payments', { params }),
+  getById: (id: string) => api.get(`/payments/${id}`),
+  create: (data: any) => api.post('/payments', data),
+  confirm: (data: any) => api.post('/payments/confirm', data),
+  refund: (id: string, data?: any) => api.post(`/payments/${id}/refund`, data),
+  getStats: () => api.get('/payments/stats'),
+};
+
 export const googleAuthAPI = {
   login: (credential: string) => api.post('/auth/google', { credential }),
 };
@@ -158,4 +165,6 @@ export const invoiceAPI = {
   getAll: (params?: any) => api.get('/invoices', { params }),
   getById: (id: string) => api.get(`/invoices/${id}`),
   create: (data: any) => api.post('/invoices', data),
+  update: (id: string, data: any) => api.put(`/invoices/${id}`, data),
+  delete: (id: string) => api.delete(`/invoices/${id}`),
 };

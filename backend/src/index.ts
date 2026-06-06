@@ -14,8 +14,9 @@ import { connectDatabase } from './config/database';
 import { connectMongoDB } from './config/mongodb';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { apiLimiter } from './middlewares/rateLimiter';
-import { setCsrfCookie, csrfTokenEndpoint } from './middlewares/csrf';
+import { setCsrfCookie, csrfProtection, csrfTokenEndpoint } from './middlewares/csrf';
 import { initializeSocket } from './sockets';
+import { startOverdueInvoiceCron } from './cron/overdueInvoices';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
@@ -32,6 +33,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import hotelRoutes from './routes/hotelRoutes';
 import reviewRoutes from './routes/reviewRoutes';
 import invoiceRoutes from './routes/invoiceRoutes';
+import activityLogRoutes from './routes/activityLogRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import randomUserRoutes from './routes/randomUserRoutes';
 import googleAuthRoutes from './routes/googleAuthRoutes';
@@ -92,6 +94,12 @@ app.use(cookieParser());
 app.use(morgan('dev'));
 app.use('/api', apiLimiter);
 app.use('/api', setCsrfCookie);
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/webhooks') || req.path.startsWith('/auth')) {
+    return next();
+  }
+  csrfProtection(req, res, next);
+});
 
 // Swagger API docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -125,6 +133,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/random-users', randomUserRoutes);
 
 // Root route
@@ -148,6 +157,8 @@ const startServer = async () => {
   validateEnv();
   await connectDatabase();
   await connectMongoDB();
+
+  startOverdueInvoiceCron();
 
   httpServer.listen(PORT, () => {
     console.log('🚀 Server running on port ' + PORT);

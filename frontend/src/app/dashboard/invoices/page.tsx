@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { invoiceAPI, bookingAPI } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
-import { FileText, Search, Download, Loader2, Plus, X } from 'lucide-react';
+import { FileText, Search, Download, Loader2, Plus, X, Pencil, Trash2 } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
 
@@ -28,6 +28,7 @@ export default function InvoicesPage() {
   const [form, setForm] = useState({
     bookingId: '', amount: '', taxAmount: '0', totalAmount: '', dueDate: '', notes: '',
   });
+  const [editingInvoice, setEditingInvoice] = useState<any>(null);
 
   useEffect(() => { fetchInvoices(); }, [page]);
 
@@ -48,24 +49,32 @@ export default function InvoicesPage() {
       setBookings(res.data.data || []);
     } catch { setBookings([]); }
     setForm({ bookingId: '', amount: '', taxAmount: '0', totalAmount: '', dueDate: '', notes: '' });
+    setEditingInvoice(null);
     setShowModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await invoiceAPI.create({
+      const data = {
         bookingId: form.bookingId,
         amount: parseFloat(form.amount),
         taxAmount: form.taxAmount ? parseFloat(form.taxAmount) : 0,
         totalAmount: parseFloat(form.totalAmount),
         dueDate: form.dueDate,
         notes: form.notes || undefined,
-      });
-      toast.success('Invoice created');
+      };
+      if (editingInvoice) {
+        await invoiceAPI.update(editingInvoice.id, data);
+        toast.success('Invoice updated');
+      } else {
+        await invoiceAPI.create(data);
+        toast.success('Invoice created');
+      }
       setShowModal(false);
+      setEditingInvoice(null);
       fetchInvoices();
-    } catch { toast.error('Failed to create invoice'); }
+    } catch { toast.error(editingInvoice ? 'Failed to update invoice' : 'Failed to create invoice'); }
   };
 
   const handleDownload = async (inv: any) => {
@@ -99,6 +108,32 @@ export default function InvoicesPage() {
     } finally {
       setDownloadingId(null);
     }
+  };
+
+  const handleEdit = async (inv: any) => {
+    try {
+      const res = await bookingAPI.getAll({ limit: 100 });
+      setBookings(res.data.data || []);
+    } catch { setBookings([]); }
+    setForm({
+      bookingId: inv.bookingId || inv.booking?.id || '',
+      amount: inv.amount?.toString() || '',
+      taxAmount: inv.taxAmount?.toString() || '0',
+      totalAmount: inv.totalAmount?.toString() || '',
+      dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().split('T')[0] : '',
+      notes: inv.notes || '',
+    });
+    setEditingInvoice(inv);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (inv: any) => {
+    if (!window.confirm(`Are you sure you want to delete invoice ${inv.invoiceNumber}?`)) return;
+    try {
+      await invoiceAPI.delete(inv.id);
+      toast.success('Invoice deleted');
+      fetchInvoices();
+    } catch { toast.error('Failed to delete invoice'); }
   };
 
   const filtered = invoices.filter((inv) =>
@@ -158,6 +193,17 @@ export default function InvoicesPage() {
                 <div className="text-right">
                   <p className="text-lg font-bold text-white">{formatCurrency(inv.totalAmount)}</p>
                 </div>
+                {isAdmin && (
+                  <Button size="sm" variant="outline" className="text-gray-400 border-white/10" onClick={() => handleEdit(inv)}>
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                )}
+                {user?.role === 'SUPER_ADMIN' && (
+                  <Button size="sm" variant="outline" className="text-red-400 border-white/10 hover:border-red-500/30"
+                    onClick={() => handleDelete(inv)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -193,7 +239,7 @@ export default function InvoicesPage() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-lg rounded-2xl bg-[#0f172a] border border-white/10 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Generate Invoice</h2>
+                <h2 className="text-xl font-bold text-white">{editingInvoice ? 'Edit Invoice' : 'Generate Invoice'}</h2>
                 <button aria-label="Close" onClick={() => setShowModal(false)} className="p-2 rounded-lg hover:bg-white/[0.05] text-gray-400">
                   <X className="w-5 h-5" />
                 </button>
@@ -250,7 +296,7 @@ export default function InvoicesPage() {
                 </div>
                 <div className="flex space-x-3 pt-2">
                   <Button type="button" variant="outline" className="flex-1 text-white border-white/20" onClick={() => setShowModal(false)}>Cancel</Button>
-                  <Button type="submit" variant="gradient" className="flex-1">Create Invoice</Button>
+                  <Button type="submit" variant="gradient" className="flex-1">{editingInvoice ? 'Update Invoice' : 'Create Invoice'}</Button>
                 </div>
               </form>
             </motion.div>

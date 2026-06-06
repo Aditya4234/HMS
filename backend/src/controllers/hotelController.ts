@@ -50,6 +50,57 @@ export const updateHotel = async (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
+export const createHotel = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { name, description, email, phone, address, city, state, country, zipCode, currency, timezone, taxRate, checkInTime, checkOutTime, amenities, logo, rating } = req.body;
+
+    if (!name) throw new AppError('Hotel name is required', 400);
+
+    const hotel = await prisma.hotel.create({
+      data: {
+        name,
+        description,
+        email,
+        phone,
+        address,
+        city,
+        state,
+        country,
+        zipCode,
+        currency: currency || 'USD',
+        timezone: timezone || 'UTC',
+        taxRate: taxRate || 0,
+        checkInTime: checkInTime || '14:00',
+        checkOutTime: checkOutTime || '11:00',
+        amenities: amenities || [],
+        logo,
+        rating: rating || 0,
+      },
+    });
+
+    return ApiResponse.success(res, hotel, 'Hotel created successfully', 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteHotel = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const hotel = await prisma.hotel.findFirst({ where: { id, deletedAt: null } });
+    if (!hotel) throw new AppError('Hotel not found', 404);
+
+    await prisma.hotel.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    return ApiResponse.success(res, null, 'Hotel deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getHotelSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const hotelId = req.user?.hotelId;

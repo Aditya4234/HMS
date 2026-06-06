@@ -78,6 +78,42 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
+export const updateInvoice = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await assertInvoiceAccess(req.user!, id);
+    const { amount, taxAmount, totalAmount, dueDate, notes, status } = req.body;
+
+    const data: any = {};
+    if (amount !== undefined) data.amount = amount;
+    if (taxAmount !== undefined) data.taxAmount = taxAmount;
+    if (totalAmount !== undefined) data.totalAmount = totalAmount;
+    if (dueDate !== undefined) data.dueDate = new Date(dueDate);
+    if (notes !== undefined) data.notes = notes;
+    if (status !== undefined) data.status = status;
+
+    const invoice = await prisma.invoice.update({
+      where: { id },
+      data,
+    });
+
+    return ApiResponse.success(res, invoice, 'Invoice updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteInvoice = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await assertInvoiceAccess(req.user!, id);
+    await prisma.invoice.delete({ where: { id } });
+    return ApiResponse.success(res, null, 'Invoice deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getInvoiceById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;

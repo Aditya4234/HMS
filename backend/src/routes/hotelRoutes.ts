@@ -44,12 +44,14 @@
  *         description: Hotel details
  */
 import { Router } from 'express';
-import { authenticate } from '../middlewares/auth';
+import { authenticate, authorize } from '../middlewares/auth';
 import {
   getHotels,
   getHotelById,
   updateHotel,
   getHotelSettings,
+  createHotel,
+  deleteHotel,
 } from '../controllers/hotelController';
 
 const router = Router();
@@ -58,5 +60,7 @@ router.get('/', getHotels);
 router.get('/settings/info', authenticate, getHotelSettings);
 router.get('/:id', getHotelById);
 router.put('/', authenticate, updateHotel);
+router.post('/', authenticate, authorize('SUPER_ADMIN'), createHotel);
+router.delete('/:id', authenticate, authorize('SUPER_ADMIN'), deleteHotel);
 
 export default router;

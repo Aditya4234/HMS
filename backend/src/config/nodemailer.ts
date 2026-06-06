@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { getPaymentReceiptHTML } from '../emails/paymentReceipt';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -23,6 +24,23 @@ export const sendEmail = async ({
     from: `"Hotel Management" <${process.env.EMAIL_FROM}>`,
     to,
     subject,
+    html,
+  });
+};
+
+export const sendPaymentReceiptEmail = async (
+  email: string,
+  name: string,
+  invoiceNumber: string,
+  amount: number,
+  method: string,
+  date: string,
+  bookingReference: string
+): Promise<void> => {
+  const html = getPaymentReceiptHTML({ name, invoiceNumber, amount, method, date, bookingReference });
+  await sendEmail({
+    to: email,
+    subject: `Payment Receipt - ${invoiceNumber}`,
     html,
   });
 };

@@ -10,6 +10,7 @@ import { generateInvoiceNumber } from '../utils/helpers';
 import { assertPaymentAccess } from '../utils/authorization';
 import { createNotification } from './notificationController';
 import { parsePagination } from '../utils/helpers';
+import { sendPaymentReceiptEmail } from '../config/nodemailer';
 
 export const createPayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -124,6 +125,22 @@ export const confirmPayment = async (req: AuthRequest, res: Response, next: Next
       'PAYMENT',
       `/dashboard/payments`
     ).catch((err) => console.error('Payment notification failed:', err));
+
+    const paymentUser = await prisma.user.findUnique({
+      where: { id: payment.booking.userId },
+      select: { email: true, fullName: true },
+    });
+    if (paymentUser) {
+      sendPaymentReceiptEmail(
+        paymentUser.email,
+        paymentUser.fullName,
+        invoice.invoiceNumber,
+        invoice.totalAmount,
+        payment.method,
+        new Date().toISOString().split('T')[0],
+        payment.booking.bookingReference
+      ).catch((err) => console.error('Payment receipt email failed:', err));
+    }
 
     return ApiResponse.success(res, { payment, invoice }, 'Payment confirmed');
   } catch (error) {
