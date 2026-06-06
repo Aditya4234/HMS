@@ -4,3 +4,4 @@ export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
 export { Input } from './input';
 export { Avatar, AvatarImage, AvatarFallback } from './avatar';
 export { Separator } from './separator';
+export { RoomImage } from './room-image';

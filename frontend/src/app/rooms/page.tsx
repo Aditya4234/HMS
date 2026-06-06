@@ -1,20 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { roomAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { RoomImage } from '@/components/ui/room-image';
 import { formatCurrency } from '@/lib/utils';
 import {
   Bed, Users, Search, MapPin, Wifi, Percent,
   ArrowRight, SlidersHorizontal, X, Loader2
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
-import { FALLBACK_IMAGES } from '@/lib/pexels';
 
 const roomTypes = ['Single', 'Double', 'Suite', 'Deluxe', 'Penthouse'];
 
@@ -184,21 +183,13 @@ export default function PublicRoomsPage() {
                   className="group rounded-2xl overflow-hidden border border-white/10 hover:border-indigo-500/30 transition-all duration-500 bg-white/[0.02]"
                 >
                   <div className="h-48 relative">
-                    {room.images && room.images.length > 0 ? (
-                      <Image
-                        src={room.images[0]}
-                        alt={`Room ${room.roomNumber}`}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                    ) : (
-                      <Image
-                        src={FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]}
-                        alt={`Room ${room.roomNumber}`}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                    )}
+                    <RoomImage
+                      src={room.images?.[0]}
+                      alt={`Room ${room.roomNumber}`}
+                      fallbackIndex={i}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
                     <div className="absolute top-4 left-4">
                       <Badge variant="premium" className="text-xs">{room.roomType}</Badge>
                     </div>

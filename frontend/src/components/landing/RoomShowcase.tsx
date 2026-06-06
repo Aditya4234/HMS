@@ -1,16 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Bed, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { RoomImage } from '@/components/ui/room-image';
 import { roomAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
-import { FALLBACK_IMAGES } from '@/lib/pexels';
 
 export default function RoomShowcase() {
   const [rooms, setRooms] = useState<any[]>([]);
@@ -53,21 +52,13 @@ export default function RoomShowcase() {
               className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-indigo-500/30 transition-all duration-500"
             >
               <div className="h-48 relative">
-                {room.images && room.images.length > 0 ? (
-                  <Image
-                    src={room.images[0]}
-                    alt={`Room ${room.roomNumber}`}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
-                ) : (
-                  <Image
-                    src={FALLBACK_IMAGES[index % FALLBACK_IMAGES.length]}
-                    alt={`Room ${room.roomNumber}`}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
-                )}
+                <RoomImage
+                  src={room.images?.[0]}
+                  alt={`Room ${room.roomNumber}`}
+                  fallbackIndex={index}
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform duration-700"
+                />
                 <div className="absolute top-4 right-4">
                   <span className="text-2xl font-bold text-white drop-shadow-lg">
                     {formatCurrency(room.pricePerNight)}

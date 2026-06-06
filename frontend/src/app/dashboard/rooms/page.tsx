@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { RoomImage } from '@/components/ui/room-image';
 import { roomAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
-import { Plus, Search, Bed, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Search, Bed, Edit, Trash2, X, Upload } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
@@ -30,6 +30,10 @@ export default function RoomsPage() {
     roomNumber: '', roomType: '', floor: '', description: '',
     pricePerNight: '', capacity: '2', size: '', beds: '1', status: 'AVAILABLE',
   });
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreview, setImagePreview] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetchRooms(); }, [page]);
 
@@ -47,6 +51,9 @@ export default function RoomsPage() {
   const openCreate = () => {
     setEditRoom(null);
     setForm({ roomNumber: '', roomType: '', floor: '', description: '', pricePerNight: '', capacity: '2', size: '', beds: '1', status: 'AVAILABLE' });
+    setImageFiles([]);
+    setImagePreview([]);
+    setExistingImages([]);
     setShowModal(true);
   };
 
@@ -58,17 +65,57 @@ export default function RoomsPage() {
       capacity: room.capacity.toString(), size: room.size?.toString() || '',
       beds: room.beds.toString(), status: room.status,
     });
+    setImageFiles([]);
+    setExistingImages(room.images || []);
+    setImagePreview(room.images || []);
     setShowModal(true);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setImageFiles((prev) => [...prev, ...files]);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setImagePreview((prev) => [...prev, ev.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    const existingCount = existingImages.length;
+    if (index < existingCount) {
+      setExistingImages((prev) => prev.filter((_, i) => i !== index));
+      setImagePreview((prev) => prev.filter((_, i) => i !== index));
+    } else {
+      const fileIndex = index - existingCount;
+      setImageFiles((prev) => prev.filter((_, i) => i !== fileIndex));
+      setImagePreview((prev) => prev.filter((_, i) => i !== index));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+      imageFiles.forEach((file) => {
+        formData.append('images', file);
+      });
       if (editRoom) {
-        await roomAPI.update(editRoom.id, form);
+        formData.append('existingImages', JSON.stringify(existingImages));
+      }
+
+      if (editRoom) {
+        await roomAPI.update(editRoom.id, formData);
         toast.success('Room updated');
       } else {
-        await roomAPI.create(form);
+        await roomAPI.create(formData);
         toast.success('Room created');
       }
       setShowModal(false);
@@ -129,8 +176,14 @@ export default function RoomsPage() {
             className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/20 transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                  <Bed className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex-shrink-0 relative">
+                  <RoomImage
+                    src={room.images?.[0]}
+                    alt={`Room ${room.roomNumber}`}
+                    fallbackIndex={i}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
@@ -245,6 +298,35 @@ export default function RoomsPage() {
                   <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
                     className="w-full rounded-xl bg-white/[0.02] border border-white/10 text-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]" />
                 </div>
+
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Room Images</label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {imagePreview.map((url, idx) => (
+                      <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-white/10">
+                        <RoomImage src={url} alt={`Image ${idx + 1}`} fill className="object-cover" />
+                        <button type="button" onClick={() => removeImage(idx)}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-500/80 text-white flex items-center justify-center text-xs">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => fileInputRef.current?.click()}
+                      className="w-20 h-20 rounded-lg border-2 border-dashed border-white/10 hover:border-indigo-500/50 flex flex-col items-center justify-center text-gray-400 hover:text-indigo-400 transition-all">
+                      <Upload className="w-5 h-5" />
+                      <span className="text-[10px] mt-1">Upload</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex space-x-3 pt-2">
                   <Button type="button" variant="outline" className="flex-1 text-white border-white/20" onClick={() => setShowModal(false)}>Cancel</Button>
                   <Button type="submit" variant="gradient" className="flex-1">{editRoom ? 'Update' : 'Create'} Room</Button>

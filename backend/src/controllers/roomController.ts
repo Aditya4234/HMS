@@ -158,6 +158,13 @@ export const updateRoom = async (req: AuthRequest, res: Response, next: NextFunc
 
     const updateData: any = { ...req.body };
 
+    let baseImages: string[] = room.images || [];
+    if (req.body.existingImages) {
+      try {
+        baseImages = JSON.parse(req.body.existingImages);
+      } catch { baseImages = room.images || []; }
+    }
+
     if (req.files) {
       const files = req.files as Express.Multer.File[];
       const newImages: string[] = [];
@@ -165,8 +172,11 @@ export const updateRoom = async (req: AuthRequest, res: Response, next: NextFunc
         const result = await uploadToCloudinary(file, 'rooms');
         newImages.push(result.url);
       }
-      updateData.images = [...(room.images || []), ...newImages];
+      updateData.images = [...baseImages, ...newImages];
+    } else {
+      updateData.images = baseImages;
     }
+    delete updateData.existingImages;
 
     if (updateData.pricePerNight) updateData.pricePerNight = parseFloat(updateData.pricePerNight);
     if (updateData.capacity) updateData.capacity = parseInt(updateData.capacity);

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -10,6 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { RoomImage } from '@/components/ui/room-image';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
   Bed, Users, MapPin, ArrowLeft, CalendarCheck,
@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
-import { FALLBACK_IMAGES } from '@/lib/pexels';
 
 export default function RoomDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -103,23 +102,13 @@ export default function RoomDetailPage() {
             <div className="lg:col-span-2 space-y-8">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <div className="h-64 md:h-80 rounded-2xl relative overflow-hidden">
-                  {room.images && room.images.length > 0 ? (
-                    <Image
-                      src={room.images[0]}
-                      alt={`Room ${room.roomNumber}`}
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                  ) : (
-                    <Image
-                      src={FALLBACK_IMAGES[0]}
-                      alt={`Room ${room.roomNumber}`}
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                  )}
+                  <RoomImage
+                    src={room.images?.[0]}
+                    alt={`Room ${room.roomNumber}`}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
                 </div>
               </motion.div>
 
