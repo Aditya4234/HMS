@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 import {
   Bed, Users, Search, MapPin, Wifi, Percent,
-  ArrowRight, SlidersHorizontal, X, Loader2, ImageIcon
+  ArrowRight, SlidersHorizontal, X, Loader2
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
+import { FALLBACK_IMAGES } from '@/lib/pexels';
 
 const roomTypes = ['Single', 'Double', 'Suite', 'Deluxe', 'Penthouse'];
 
@@ -191,9 +192,12 @@ export default function PublicRoomsPage() {
                         className="object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center">
-                        <ImageIcon className="w-12 h-12 text-indigo-400/30" />
-                      </div>
+                      <Image
+                        src={FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]}
+                        alt={`Room ${room.roomNumber}`}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
                     )}
                     <div className="absolute top-4 left-4">
                       <Badge variant="premium" className="text-xs">{room.roomType}</Badge>

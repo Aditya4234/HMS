@@ -13,10 +13,11 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
   Bed, Users, MapPin, ArrowLeft, CalendarCheck,
-  Star, CheckCircle, Loader2, Shield, ImageIcon
+  Star, CheckCircle, Loader2, Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
+import { FALLBACK_IMAGES } from '@/lib/pexels';
 
 export default function RoomDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,9 +112,13 @@ export default function RoomDetailPage() {
                       priority
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-pink-600/20 flex items-center justify-center">
-                      <ImageIcon className="w-16 h-16 text-indigo-400/20" />
-                    </div>
+                    <Image
+                      src={FALLBACK_IMAGES[0]}
+                      alt={`Room ${room.roomNumber}`}
+                      fill
+                      className="object-cover"
+                      priority
+                    />
                   )}
                 </div>
               </motion.div>

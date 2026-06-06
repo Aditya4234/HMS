@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Play, ArrowRight, TrendingUp, Users, CalendarCheck, DollarSign } from 'lucide-react';
 import Link from 'next/link';
-import { searchPexelsImages } from '@/lib/pexels';
+import { searchPexelsImages, HERO_FALLBACK } from '@/lib/pexels';
 
 const floatingCards = [
   { icon: TrendingUp, label: 'Revenue', value: '$12.4k', color: 'from-green-400 to-emerald-500', trend: '+23%' },
@@ -16,7 +16,7 @@ const floatingCards = [
 ];
 
 export default function Hero() {
-  const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [heroImage, setHeroImage] = useState<string>(HERO_FALLBACK);
 
   useEffect(() => {
     searchPexelsImages('luxury hotel resort lobby', 1).then((photos) => {

@@ -4,14 +4,13 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Bed, Users, ImageIcon } from 'lucide-react';
+import { Bed, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { roomAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { ArrowRight } from 'lucide-react';
-
-const FALLBACK_IMAGE = 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=800';
+import { FALLBACK_IMAGES } from '@/lib/pexels';
 
 export default function RoomShowcase() {
   const [rooms, setRooms] = useState<any[]>([]);
@@ -62,9 +61,12 @@ export default function RoomShowcase() {
                     className="object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center">
-                    <ImageIcon className="w-12 h-12 text-indigo-400/30" />
-                  </div>
+                  <Image
+                    src={FALLBACK_IMAGES[index % FALLBACK_IMAGES.length]}
+                    alt={`Room ${room.roomNumber}`}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
                 )}
                 <div className="absolute top-4 right-4">
                   <span className="text-2xl font-bold text-white drop-shadow-lg">
