@@ -4,9 +4,9 @@
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://your-backend.onrender.com/api",
-    "NEXT_PUBLIC_SOCKET_URL": "https://your-backend.onrender.com",
-    "NEXT_PUBLIC_SITE_URL": "https://your-vercel-app.vercel.app",
+    "NEXT_PUBLIC_API_URL": "https://hms-3-kjs8.onrender.com/api",
+    "NEXT_PUBLIC_SOCKET_URL": "https://hms-3-kjs8.onrender.com",
+    "NEXT_PUBLIC_SITE_URL": "https://hms-eight-phi.vercel.app",
     "NEXT_PUBLIC_SITE_NAME": "HotelManager",
     "NEXT_PUBLIC_ENABLE_MONGO_AUTH": "true"
   }

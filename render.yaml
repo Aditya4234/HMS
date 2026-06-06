@@ -26,7 +26,7 @@ services:
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
       - key: FRONTEND_URL
-        value: https://your-vercel-app.vercel.app # Update this after Vercel deployment
+        value: https://hms-eight-phi.vercel.app
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT

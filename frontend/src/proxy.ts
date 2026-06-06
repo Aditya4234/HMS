@@ -17,24 +17,10 @@ export function proxy(request: NextRequest) {
   const isPublicPath = publicPaths.some(
     (path) => pathname === path || pathname.startsWith('/_next') || pathname.startsWith('/static') || pathname.startsWith('/images')
   );
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') ||
-    pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password') ||
-    pathname.startsWith('/otp-verification');
-  const isDashboardRoute = pathname.startsWith('/dashboard');
   const isApiRoute = pathname.startsWith('/api');
 
-  if (isPublicPath && !isAuthPage) {
+  if (isPublicPath) {
     return NextResponse.next();
-  }
-
-  if (isAuthPage && refreshToken) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  if (isDashboardRoute && !refreshToken) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
   }
 
   if (isApiRoute && !refreshToken) {
