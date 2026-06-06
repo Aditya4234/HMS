@@ -29,6 +29,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const verificationOtp = generateOTP();
     const verificationOtpExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+    const smtpConfigured = !!process.env.SMTP_HOST;
+    const autoVerify = !smtpConfigured;
+
     const user = await prisma.$transaction(async (tx) => {
       let hotel;
       if (hotelName) {
@@ -50,8 +53,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           phoneNumber,
           role: hotel ? 'HOTEL_ADMIN' : 'CUSTOMER',
           hotelId: hotel?.id,
-          otp: verificationOtp,
-          otpExpiry: verificationOtpExpiry,
+          otp: autoVerify ? null : verificationOtp,
+          otpExpiry: autoVerify ? null : verificationOtpExpiry,
+          emailVerified: autoVerify,
         },
         select: {
           id: true,
@@ -94,19 +98,21 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    try {
-      await sendEmailVerificationEmail(email, fullName, verificationOtp);
-    } catch (emailError) {
-      console.error('Verification email failed:', emailError);
+    if (!autoVerify) {
+      try {
+        await sendEmailVerificationEmail(email, fullName, verificationOtp);
+      } catch (emailError) {
+        console.error('Verification email failed:', emailError);
+      }
+
+      try {
+        await sendWelcomeEmail(email, fullName);
+      } catch (emailError) {
+        console.error('Welcome email failed:', emailError);
+      }
     }
 
-    try {
-      await sendWelcomeEmail(email, fullName);
-    } catch (emailError) {
-      console.error('Welcome email failed:', emailError);
-    }
-
-    return ApiResponse.success(res, { user, accessToken, emailVerificationRequired: true }, 'Registration successful. Please verify your email.', 201);
+    return ApiResponse.success(res, { user, accessToken, emailVerificationRequired: !autoVerify }, 'Registration successful.', 201);
   } catch (error) {
     next(error);
   }
