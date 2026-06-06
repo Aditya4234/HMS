@@ -65,9 +65,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       try {
         const res = await authAPI.getProfile();
         setUser(res.data.data);
-      } catch {
-        logout();
-        router.replace('/login');
+      } catch (err: any) {
+        if (err?.response?.status === 401) {
+          logout();
+          router.replace('/login');
+        }
       }
     };
 
